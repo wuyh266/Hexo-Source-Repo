@@ -103,7 +103,7 @@ theme: butterfly
 deploy:
   type: git
   repo: https://github.com/wuyh266/wuyh266.github.io.git
-  branch: main
+  branch: gh-pages
   # abbrlink config
 abbrlink:
   alg: crc32      # Algorithm used to calc abbrlink. Support crc16(default) and crc32
