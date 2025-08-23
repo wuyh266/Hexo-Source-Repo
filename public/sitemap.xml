@@ -2,9 +2,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://wuyh266.github.io/manifest.json</loc>
+    <loc>https://wuyh266.github.io/comments/index.html</loc>
     
-    <lastmod>2025-08-21</lastmod>
+    <lastmod>2025-08-22</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -12,6 +12,33 @@
   
   <url>
     <loc>https://wuyh266.github.io/posts/36208.html</loc>
+    
+    <lastmod>2025-08-22</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://wuyh266.github.io/categories/index.html</loc>
+    
+    <lastmod>2025-08-22</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://wuyh266.github.io/tags/index.html</loc>
+    
+    <lastmod>2025-08-22</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://wuyh266.github.io/manifest.json</loc>
     
     <lastmod>2025-08-21</lastmod>
     
@@ -22,12 +49,40 @@
 
   <url>
     <loc>https://wuyh266.github.io/</loc>
-    <lastmod>2025-08-22</lastmod>
+    <lastmod>2025-08-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   
+  <url>
+    <loc>https://wuyh266.github.io/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</loc>
+    <lastmod>2025-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://wuyh266.github.io/tags/CNN/</loc>
+    <lastmod>2025-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://wuyh266.github.io/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</loc>
+    <lastmod>2025-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
 
+  
+  <url>
+    <loc>https://wuyh266.github.io/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</loc>
+    <lastmod>2025-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
   
 </urlset>

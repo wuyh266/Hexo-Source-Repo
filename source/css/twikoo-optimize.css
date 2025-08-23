@@ -1,0 +1,174 @@
+/* Twikoo 性能优化CSS */
+/* 提高评论加载速度和用户体验 */
+
+/* 评论加载状态优化 */
+#twikoo .twikoo-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* 评论框性能优化 */
+#twikoo .twikoo-input {
+  transition: all 0.3s ease;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+#twikoo .twikoo-input:focus {
+  border-color: #49b1f5;
+  box-shadow: 0 0 0 2px rgba(73, 177, 245, 0.2);
+  outline: none;
+}
+
+/* 评论列表性能优化 */
+#twikoo .twikoo-comment {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #49b1f5;
+  transition: all 0.3s ease;
+}
+
+#twikoo .twikoo-comment:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+/* 评论信息样式 */
+#twikoo .twikoo-comment .twikoo-comment-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#twikoo .twikoo-comment .twikoo-comment-name {
+  font-weight: bold;
+  color: #333;
+  margin-right: 10px;
+}
+
+#twikoo .twikoo-comment .twikoo-comment-time {
+  color: #999;
+  font-size: 12px;
+}
+
+/* 评论内容样式 */
+#twikoo .twikoo-comment .twikoo-comment-content {
+  color: #333;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+/* 发送按钮优化 */
+#twikoo .twikoo-submit {
+  background: #49b1f5;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+#twikoo .twikoo-submit:hover {
+  background: #3a8fd9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(73, 177, 245, 0.3);
+}
+
+#twikoo .twikoo-submit:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 错误提示样式 */
+#twikoo .twikoo-error {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+/* 成功提示样式 */
+#twikoo .twikoo-success {
+  color: #155724;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+/* 加载动画优化 */
+#twikoo .twikoo-loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #49b1f5;
+  border-radius: 50%;
+  animation: twikoo-spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes twikoo-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  #twikoo .twikoo-comment {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  #twikoo .twikoo-input {
+    padding: 10px;
+  }
+  
+  #twikoo .twikoo-submit {
+    padding: 10px 16px;
+    font-size: 16px;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  #twikoo .twikoo-comment {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  #twikoo .twikoo-comment:hover {
+    background: #4a5568;
+  }
+  
+  #twikoo .twikoo-input {
+    background: #2d3748;
+    color: #e2e8f0;
+    border-color: #4a5568;
+  }
+  
+  #twikoo .twikoo-comment .twikoo-comment-name {
+    color: #e2e8f0;
+  }
+  
+  #twikoo .twikoo-comment .twikoo-comment-content {
+    color: #e2e8f0;
+  }
+}

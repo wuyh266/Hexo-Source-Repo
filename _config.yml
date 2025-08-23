@@ -102,8 +102,8 @@ theme: butterfly
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
-  repo: git@github.com:wuyh266/wuyh266.github.io.git
-  main: master
+  repo: https://github.com/wuyh266/wuyh266.github.io.git
+  branch: main
   # abbrlink config
 abbrlink:
   alg: crc32      # Algorithm used to calc abbrlink. Support crc16(default) and crc32
@@ -174,3 +174,4 @@ aplayer:
 aplayerInject:
   enable: true
   per_page: true
+
