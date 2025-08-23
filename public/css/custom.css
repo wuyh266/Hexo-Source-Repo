@@ -675,3 +675,20 @@ div#category {
     font-size: 16px !important; /* 移动端字体稍大 */
   }
 }
+
+/* 自定义头像转动效果 */
+.avatar-img img {
+  /* 确保初始状态不转动 */
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
+}
+
+.avatar-img img:hover {
+  /* 只在鼠标悬停时转动 */
+  transform: rotate(360deg);
+}
+
+/* 确保头像不会自动转动 */
+.avatar-img img:not(:hover) {
+  animation: none !important;
+}

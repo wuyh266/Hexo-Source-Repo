@@ -57,7 +57,7 @@ favicon: /img/favicon.png
 
 avatar:
   img: /img/butterfly-icon.png
-  effect: false
+  effect: true
 
 # Disable all banner images
 disable_top_img: false
@@ -526,7 +526,7 @@ comments:
   # Leave it empty if you don't need comments
   # Choose: Disqus/Disqusjs/Livere/Gitalk/Valine/Waline/Utterances/Facebook Comments/Twikoo/Giscus/Remark42/Artalk
   # Format of two comments system : Disqus,Waline
-  use: Twikoo
+  use: Waline
   # Display the comment name next to the button
   text: true
   # Lazyload: The comment system will be load when comment element enters the browser's viewport.
@@ -582,11 +582,22 @@ valine:
 # Waline - A simple comment system with backend support fork from Valine
 # https://waline.js.org/
 waline:
-  serverURL:
-  bg:
+  serverURL: # 请替换为你的实际 Waline 服务端 URL
+  bg: transparent
   # Use Waline pageview count as the page view count
-  pageview: false
+  pageview: true
   option:
+    placeholder: 说点什么吧...
+    showCount: true
+    orderBy: 'time'
+    pageSize: 20
+    emoji: true
+    imageUpload: false
+    moderation: false
+    login: 'enable'
+    meta: ['nick', 'mail', 'link']
+    requiredMeta: ['nick']
+    lang: 'zh-CN'
 
 # Utterances
 # https://utteranc.es/
@@ -630,13 +641,16 @@ twikoo:
 # Giscus
 # https://giscus.app/
 giscus:
-  repo:
-  repo_id:
-  category_id:
+  repo: wuyh266/Hexo-Source-Repo
+  repo_id: R_kgDOLqQAAA
+  category_id: DIC_kwDOLqQAAM4CbQ
   light_theme: light
   dark_theme: dark
   js:
   option:
+    theme: light
+    darkTheme: dark
+    lang: zh-CN
 
 # Remark42
 # https://remark42.com/docs/configuration/frontend/
