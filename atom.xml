@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Decwoveh的学习周记</title>
+  
+  <subtitle>好好学习，天天向上</subtitle>
+  <link href="https://wuyh266.github.io/atom.xml" rel="self"/>
+  
+  <link href="https://wuyh266.github.io/"/>
+  <updated>2025-08-23T06:33:45.898Z</updated>
+  <id>https://wuyh266.github.io/</id>
+  
+  <author>
+    <name>Decwoveh</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>我的第一篇blog</title>
+    <link href="https://wuyh266.github.io/posts/36208.html"/>
+    <id>https://wuyh266.github.io/posts/36208.html</id>
+    <published>2025-08-20T14:51:31.000Z</published>
+    <updated>2025-08-23T06:33:45.898Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h1><p>这是我的第一篇blog，有些紧张，也有点粗糙，我也会把他尽量的弄得好看些，这篇blog应该会是我相当于笔记本的一个东西，用来记录深度学习的一些内容，因为我发现我经常看了后面忘前面，现在要好好整理一下了，应该会直接从CNN开始，跳过python基础，当然，如果我发现我的python也忘记了的话，我可能又会去补一个python的专栏。第一篇大概就是这么多,开学之后尽量一周一更</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h1 id=&quot;感想&quot;&gt;&lt;a href=&quot;#感想&quot; class=&quot;headerlink&quot; title=&quot;感想&quot;&gt;&lt;/a&gt;感想&lt;/h1&gt;&lt;p&gt;这是我的第一篇blog，有些紧张，也有点粗糙，我也会把他尽量的弄得好看些，这篇blog应该会是我相当于笔记本的一个东西，用来记录深度学习的一</summary>
+      
+    
+    
+    
+    <category term="深度学习" scheme="https://wuyh266.github.io/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="深度学习" scheme="https://wuyh266.github.io/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="CNN" scheme="https://wuyh266.github.io/tags/CNN/"/>
+    
+    <category term="学习笔记" scheme="https://wuyh266.github.io/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"/>
+    
+  </entry>
+  
+</feed>
