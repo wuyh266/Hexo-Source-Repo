@@ -35,7 +35,7 @@
     "hexo-server": "^3.0.0",
     "hexo-theme-landscape": "^1.0.0",
     "live2d-widget-model-koharu": "^1.0.5",
-    "mongodb": "^6.18.0",
+    "mongodb": "^6.19.0",
     "workbox-build": "^7.3.0"
   },
   "devDependencies": {
