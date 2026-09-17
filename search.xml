@@ -47,22 +47,22 @@
     
     
     <entry>
-      <title>留言板</title>
-      <link href="/comments/index.html"/>
-      <url>/comments/index.html</url>
+      <title>分类</title>
+      <link href="/categories/index.html"/>
+      <url>/categories/index.html</url>
       
-        <content type="html"><![CDATA[<h2 id="💬-欢迎留言交流"><a href="#💬-欢迎留言交流" class="headerlink" title="💬 欢迎留言交流"></a>💬 欢迎留言交流</h2><p>有什么想说的、想问的、想吐槽的，都可以在这里留言哦！</p><hr><p><em>无需注册账户，直接输入昵称和评论即可</em></p>]]></content>
+        <content type="html"><![CDATA[]]></content>
       
     </entry>
     
     
     
     <entry>
-      <title>分类</title>
-      <link href="/categories/index.html"/>
-      <url>/categories/index.html</url>
+      <title>留言板</title>
+      <link href="/comments/index.html"/>
+      <url>/comments/index.html</url>
       
-        <content type="html"><![CDATA[]]></content>
+        <content type="html"><![CDATA[<h2 id="💬-欢迎留言交流"><a href="#💬-欢迎留言交流" class="headerlink" title="💬 欢迎留言交流"></a>💬 欢迎留言交流</h2><p>有什么想说的、想问的、想吐槽的，都可以在这里留言哦！</p><hr><p><em>无需注册账户，直接输入昵称和评论即可</em></p>]]></content>
       
     </entry>
     
