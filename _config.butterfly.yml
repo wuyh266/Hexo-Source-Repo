@@ -60,7 +60,7 @@ favicon: /img/favicon.png
 
 avatar:
   img: /img/touxiang.png
-  effect: true
+  effect: false
 
 # Disable all banner images
 disable_top_img: false
@@ -294,7 +294,7 @@ aside:
       link: https://github.com/wuyh266
   card_announcement:
     enable: true
-    content: 一定要好好学习啊
+    content: 本网站仅学习使用，各个功能还在实现中,無钱买好的数据库，故切勿登录以及在评论下面追加评论（登录是给有钱了之后搞得接口，别点！）评论加邮箱可显示QQ头像，否则全默认
   card_recent_post:
     enable: true
     # If set 0 will show all
@@ -338,7 +338,7 @@ aside:
     limit: 8
     sort_order:
   card_post_series:
-    enable: true
+    enable: false
     # The title shows the series name
     series_title: false
     # Order by title or date
@@ -346,7 +346,7 @@ aside:
     # Sort of order. 1, asc for ascending; -1, desc for descending
     order: -1
   card_webinfo:
-    enable: true
+    enable: false
     post_count: true
     last_push_date: true
     sort_order:
@@ -529,16 +529,16 @@ comments:
   # Leave it empty if you don't need comments
   # Choose: Disqus/Disqusjs/Livere/Gitalk/Valine/Waline/Utterances/Facebook Comments/Twikoo/Giscus/Remark42/Artalk
   # Format of two comments system : Disqus,Waline
-  use: Waline # 使用Waline留言系统
+  use: Waline
   # Display the comment name next to the button
   text: true
   # Lazyload: The comment system will be load when comment element enters the browser's viewport.
   # If you set it to true, the comment count will be invalid
-  lazyload: true
+  lazyload: false
   # Display comment count in post's top_img
   count: true  # 启用评论数显示
   # Display comment count in Home Page
-  card_post_count: true  # 启用首页评论数显示
+  card_post_count: false  # 启用首页评论数显示
 
 # Disqus
 # https://disqus.com/
@@ -582,46 +582,23 @@ valine:
   visitor: false
   option:
 
-# Waline - 简洁的留言系统，支持匿名评论
+# Waline is the only enabled comment system.
 # https://waline.js.org/
 waline:
-  serverURL: https://waline.542501.xyz  # 请替换为您的Waline服务地址
-  bg: # 背景图片，可选
+  serverURL: https://myblog-umber-chi.vercel.app
+  bg:
   # Use Waline pageview count as the page view count
   pageview: false
   option:
-    # 留言框设置
-    placeholder: 说点什么吧...  # 留言框占位符
-    # 必填字段设置 - 只要求昵称
-    requiredMeta: ['nick']  # 只要求昵称，不要求邮箱和网址
-    # 可选字段设置
-    meta: ['nick', 'mail', 'link']  # 显示昵称、邮箱、网址字段，但只有昵称必填
-    # 留言显示设置
-    showCommentCount: true  # 显示留言数
-    # 留言排序
-    orderBy: 'time'  # 按时间排序：time(时间)/hot(热度)
-    # 每页显示留言数
+    placeholder: 说点什么吧...
+    requiredMeta: ['nick']
+    meta: ['nick', 'mail', 'link']
+    commentSorting: latest
     pageSize: 10
-    # 表情包
     emoji: true
-    # 图片上传
-    imageUpload: false  # 禁用图片上传，简化功能
-    # 评论审核
-    moderation: false  # 禁用审核，直接显示
-    # 匿名评论
-    anonymous: true  # 允许匿名评论
-    # 登录设置
-    login: 'enable'  # 启用登录功能
-    # 主题设置
-    theme: 'auto'  # 自动适应明暗主题
-    # 语言设置
-    lang: 'zh-CN'  # 中文界面
-    # 其他设置
-    copyright: false  # 不显示版权信息
-    # 性能优化
-    lazy: true  # 懒加载
-    # 错误处理
-    errorHandler: true  # 启用错误处理
+    imageUploader: false
+    login: disable
+    lang: zh-CN
 
 # Utterances
 # https://utteranc.es/
@@ -646,59 +623,25 @@ facebook_comments:
   order_by: social
   lang: en_US
 
-# Twikoo - 简洁的评论系统，无需GitHub账户
+# Twikoo (disabled)
 # https://github.com/imaegoo/twikoo
 twikoo:
-  envId: https://twikoo.542501.xyz   # 您的Twikoo后端服务地址
-  region: ap-shanghai  # 地区设置，国内用户建议使用ap-shanghai
+  envId:
+  region:
   # Use Twikoo visitor count as the page view count
   visitor: false
   option:
-    # 评论框设置
-    placeholder: 说点什么吧...  # 评论框占位符
-    # 评论显示设置
-    showCount: true  # 显示评论数
-    # 评论排序
-    orderBy: 'time'  # 按时间排序：time(时间)/hot(热度)
-    # 每页显示评论数
-    pageSize: 10  # 减少到10条，提高加载速度
-    # 评论框位置
-    commentElement: '#twikoo'
-    # 评论框样式
-    theme: 'light'  # 主题：light(浅色)/dark(深色)
-    # 表情包
-    emoji: true
-    # 图片上传
-    imageUpload: false
-    # 评论审核
-    moderation: false
-    # 性能优化设置
-    timeout: 10000  # 请求超时时间：10秒
-    # 缓存设置
-    cache: true  # 启用缓存
-    # 错误重试
-    retry: 3  # 失败重试次数
 
-# Giscus - 基于GitHub Discussions的评论系统
+# Giscus (disabled)
 # https://giscus.app/
 giscus:
-  repo: wuyh266/wuyh266.github.io  # 您的GitHub仓库，格式：用户名/仓库名
-  repo_id: R_kgDOJxxxxxxxxx  # 仓库ID，请在giscus.app获取后填入
-  category_id: DIC_kwDOJxxxxxxxxx  # 分类ID，请在giscus.app获取后填入
-  light_theme: light  # 浅色主题
-  dark_theme: dark  # 深色主题
-  js:  # 自定义JS文件路径
-  option:  # 其他选项
-    # 启用评论系统
-    reactionsEnabled: true  # 启用表情反应
-    emitMetadata: false  # 发送元数据
-    inputPosition: bottom  # 输入框位置：top/bottom
-    # 主题设置
-    theme: preferred_color_scheme  # 主题：light/dark/preferred_color_scheme
-    # 语言设置
-    lang: zh-CN  # 语言：zh-CN(中文)/en(英文)
-    # 映射设置
-    mapping: pathname  # 映射方式：pathname/url/title/og:title
+  repo:
+  repo_id:
+  category_id:
+  light_theme: light
+  dark_theme: dark
+  js:
+  option:
 
 # Remark42
 # https://remark42.com/docs/configuration/frontend/
@@ -1193,8 +1136,64 @@ inject:
   head:
     # 自定义css
     - <link rel="stylesheet" href="/css/custom.css" media="defer" onload="this.media='all'">
-    # Twikoo性能优化CSS
-    - <link rel="stylesheet" href="/css/twikoo-optimize.css" media="defer" onload="this.media='all'">
+    # CDN备用加载脚本
+    - |
+      <script>
+        // CDN备用加载机制
+        (function() {
+          var cdnList = [
+            'fastly.jsdelivr.net',
+            'gcore.jsdelivr.net', 
+            'testingcf.jsdelivr.net',
+            'cdn.jsdelivr.net'
+          ];
+          
+          function loadWithFallback(url, callback) {
+            var current = 0;
+            function tryLoad() {
+              var testUrl = url.replace('fastly.jsdelivr.net', cdnList[current]);
+              var link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = testUrl;
+              link.onerror = function() {
+                current++;
+                if (current < cdnList.length) {
+                  tryLoad();
+                } else if (callback) callback();
+              };
+              link.onload = function() {
+                if (callback) callback();
+              };
+              document.head.appendChild(link);
+            }
+            tryLoad();
+          }
+          
+          function loadScriptWithFallback(url, callback) {
+            var current = 0;
+            function tryLoad() {
+              var testUrl = url.replace('fastly.jsdelivr.net', cdnList[current]);
+              var script = document.createElement('script');
+              script.src = testUrl;
+              script.onerror = function() {
+                current++;
+                if (current < cdnList.length) {
+                  tryLoad();
+                } else if (callback) callback();
+              };
+              script.onload = function() {
+                if (callback) callback();
+              };
+              document.head.appendChild(script);
+            }
+            tryLoad();
+          }
+          
+          // 存储备用加载函数到全局
+          window.loadWithFallback = loadWithFallback;
+          window.loadScriptWithFallback = loadScriptWithFallback;
+        })();
+      </script>
   bottom:
     # aplayer音乐
     - <div class="aplayer no-destroy" data-id="13050639033" data-server="netease" data-type="playlist" 
@@ -1208,7 +1207,7 @@ CDN:
   # Note: Dev version can only use 'local' for internal scripts
   # Note: When setting third-party scripts to 'local', you need to install hexo-butterfly-extjs
   internal_provider: local
-  third_party_provider: jsdelivr
+  third_party_provider: custom
 
   # Add version number to url, true or false
   version: false
@@ -1218,6 +1217,14 @@ CDN:
   custom_format:
 
   option:
+    # 使用多个备用CDN源
+    fontawesome: https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css
+    lazyload: https://fastly.jsdelivr.net/npm/vanilla-lazyload@latest/dist/lazyload.iife.min.js
+    aplayer_css: https://fastly.jsdelivr.net/npm/aplayer@latest/dist/APlayer.min.css
+    aplayer_js: https://fastly.jsdelivr.net/npm/aplayer@latest/dist/APlayer.min.js
+    meting_js: https://fastly.jsdelivr.net/npm/butterfly-extsrc@latest/metingjs/dist/Meting.min.js
+    waline_css: https://fastly.jsdelivr.net/npm/@waline/client@3.6.0/dist/waline.css
+    waline_js: https://fastly.jsdelivr.net/npm/@waline/client@3.6.0/dist/waline.js
     # abcjs_basic_js:
     # activate_power_mode:
     # algolia_js:

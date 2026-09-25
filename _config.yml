@@ -13,7 +13,7 @@ timezone: ''
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
-url: https://wuyh266.github.io
+url: https://542501.xyz
 permalink: posts/:abbrlink.html
 permalink_defaults:
 pretty_urls:
@@ -96,14 +96,14 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: yilia
+theme: butterfly
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
-  repo: https://github.com/wuyh266/wuyh266.github.io.git
-  branch: gh-pages
+  repo: git@github.com:wuyh266/wuyh266.github.io.git
+  main: master
   # abbrlink config
 abbrlink:
   alg: crc32      # Algorithm used to calc abbrlink. Support crc16(default) and crc32

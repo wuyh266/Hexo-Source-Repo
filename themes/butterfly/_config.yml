@@ -57,7 +57,7 @@ favicon: /img/favicon.png
 
 avatar:
   img: /img/butterfly-icon.png
-  effect: true
+  effect: false
 
 # Disable all banner images
 disable_top_img: false
@@ -535,7 +535,7 @@ comments:
   # Display comment count in post's top_img
   count: true
   # Display comment count in Home Page
-  card_post_count: true
+  card_post_count: false
 
 # Disqus
 # https://disqus.com/
@@ -579,25 +579,23 @@ valine:
   visitor: false
   option:
 
-# Waline - A simple comment system with backend support fork from Valine
+# Waline is the only enabled comment system.
 # https://waline.js.org/
 waline:
-  serverURL: # 请替换为你的实际 Waline 服务端 URL
-  bg: transparent
+  serverURL: https://waline.542501.xyz
+  bg:
   # Use Waline pageview count as the page view count
-  pageview: true
+  pageview: false
   option:
     placeholder: 说点什么吧...
-    showCount: true
-    orderBy: 'time'
-    pageSize: 20
-    emoji: true
-    imageUpload: false
-    moderation: false
-    login: 'enable'
-    meta: ['nick', 'mail', 'link']
     requiredMeta: ['nick']
-    lang: 'zh-CN'
+    meta: ['nick', 'mail', 'link']
+    commentSorting: latest
+    pageSize: 10
+    emoji: true
+    imageUploader: false
+    login: disable
+    lang: zh-CN
 
 # Utterances
 # https://utteranc.es/
@@ -625,32 +623,22 @@ facebook_comments:
 # Twikoo
 # https://github.com/imaegoo/twikoo
 twikoo:
-  envId: https://your-twikoo-project.vercel.app  # 请替换为您的实际Vercel域名
-  region: ap-shanghai  # 国内用户建议使用上海区域
+  envId:
+  region:
   # Use Twikoo visitor count as the page view count
   visitor: false
   option:
-    placeholder: 说点什么吧...  # 评论框占位符
-    showCount: true  # 显示评论数
-    orderBy: 'time'  # 按时间排序
-    pageSize: 20  # 每页显示评论数
-    emoji: true  # 启用表情包
-    imageUpload: false  # 禁用图片上传（避免存储问题）
-    moderation: false  # 禁用评论审核
 
 # Giscus
 # https://giscus.app/
 giscus:
-  repo: wuyh266/Hexo-Source-Repo
-  repo_id: R_kgDOLqQAAA
-  category_id: DIC_kwDOLqQAAM4CbQ
+  repo:
+  repo_id:
+  category_id:
   light_theme: light
   dark_theme: dark
   js:
   option:
-    theme: light
-    darkTheme: dark
-    lang: zh-CN
 
 # Remark42
 # https://remark42.com/docs/configuration/frontend/
@@ -1065,7 +1053,7 @@ inject:
   head:
     # - <link rel="stylesheet" href="/xxx.css">
   bottom:
-    # - <script src="xxxx"></script>
+    - <script src="/js/statistics-fix.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
