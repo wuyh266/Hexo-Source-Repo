@@ -83,7 +83,8 @@ gulp.task("minify-css", () => {
 // 压缩 public 目录内 html
 gulp.task("minify-html", () => {
   return gulp
-    .src("./public/**/*.html")
+    // Keep the editor's CSP and the intentionally empty iframe sandbox intact.
+    .src(["./public/**/*.html", "!./public/editor/**"])
     .pipe(htmlclean())
     .pipe(
       htmlmin({

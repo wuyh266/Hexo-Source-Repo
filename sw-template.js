@@ -53,6 +53,12 @@ self.addEventListener('fetch', (event) => {
   // 忽略非 GET 请求（如 POST/PUT 等，避免缓存非幂等请求）
   if (event.request.method !== 'GET') return;
 
+  // Never cache private editing traffic or third-party API responses.
+  const requestURL = new URL(event.request.url);
+  if (requestURL.origin !== self.location.origin ||
+      requestURL.pathname.startsWith('/editor') ||
+      event.request.headers.has('Authorization')) return;
+
   // 自定义缓存策略：优先缓存，无缓存则请求网络
   event.respondWith(
     caches.match(event.request)

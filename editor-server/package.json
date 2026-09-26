@@ -1,0 +1,25 @@
+{
+  "name": "decwoveh-editor-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build:editor": "node tools/build-editor.mjs",
+    "dev": "node --env-file=.env tools/dev.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
+    "dompurify": "^3.3.1",
+    "esbuild": "^0.25.12",
+    "jsdom": "^26.1.0",
+    "marked": "^15.0.12"
+  }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https: http://localhost:4318 http://127.0.0.1:4318; frame-src 'self' about:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>写作间 · Decwoveh的学习周记</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="stylesheet" href="/editor/editor.css">
+  <script type="module" src="/editor/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="page-wash" aria-hidden="true"></div>
+  <section id="login-view" class="login-layout">
+    <div class="login-story">
+      <a href="/" class="brand"><span class="brand-mark">D<span>·</span></span><span>Decwoveh<small>学习周记 / WRITING ROOM</small></span></a>
+      <div class="story-copy"><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>把今天的思考，<br>写成明天的收获<span>。</span></h1><p>一道题的顿悟，一段代码的来路。<br>这里是你的写作间，也是知识慢慢生长的地方。</p><div class="story-rule"></div><span class="tiny">记录 · 整理 · 分享</span></div>
+      <a href="/" class="back-site">↗ 回到学习周记</a>
+    </div>
+    <div class="login-card">
+      <div class="little-symbol" aria-hidden="true">✎</div><p class="eyebrow">WELCOME BACK</p><h2>欢迎回到写作间</h2><p class="muted">登录后，继续上次还没写完的故事。</p>
+      <form id="login-form">
+        <label for="password">作者密码</label><input id="password" name="password" type="password" autocomplete="current-password" placeholder="输入独立的写作间密码" required maxlength="256">
+        <p id="endpoint-hint" class="field-note">正在读取编辑服务配置…</p>
+        <button class="button primary wide" id="login-button" type="submit" disabled>进入写作间 <span>→</span></button>
+        <p id="login-error" class="inline-error" role="alert"></p>
+      </form>
+      <details id="connection-details" class="connection"><summary>首次使用 / 连接编辑服务</summary><p>填写独立文章后台的地址，不是 Waline 评论地址。密码只会发送到下方明确显示的服务。</p><label for="endpoint">后台网址</label><input id="endpoint" type="url" placeholder="https://你的编辑服务.vercel.app" autocomplete="off"><button id="connect-button" class="button secondary wide" type="button">保存连接地址</button><p>后台还没部署？可以先离线试写，体验 Markdown 和预览。</p></details>
+      <button id="offline-button" class="text-button wide" type="button">先离线试写，不连接云端 ↗</button>
+      <p class="login-foot">私人草稿 · 双栏预览 · 写好再发布</p>
+    </div>
+  </section>
+
+  <div id="workspace" class="workspace" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="/"><span class="brand-mark">D<span>·</span></span><span>Decwoveh<small>我的写作间</small></span></a>
+      <p class="sidebar-label">WORKSPACE</p>
+      <nav aria-label="文章筛选"><button class="nav-item active" data-filter="all"><span>▤ &nbsp; 全部文章</span><span id="count-all">0</span></button><button class="nav-item" data-filter="draft"><span>✎ &nbsp; 草稿箱</span><span id="count-draft">0</span></button><button class="nav-item" data-filter="published"><span>↗ &nbsp; 已发布</span><span id="count-published">0</span></button></nav>
+      <div class="sidebar-note"><span class="eyebrow">ONE STEP AT A TIME</span><p>慢慢写，<br>每一篇都有意义。</p><span class="fine-line"></span></div>
+      <div class="sidebar-bottom"><a href="/" target="_blank" rel="noopener">↗ 访问博客</a><button id="logout" class="text-button">退出写作间</button><div class="profile"><img src="/img/touxiang.png" alt=""><span>Decwoveh<small>学习，永不止步</small></span><span class="online-dot" aria-hidden="true"></span></div></div>
+    </aside>
+    <main id="main" class="main">
+      <header class="topbar"><div class="breadcrumb">学习周记 <span>/</span> <strong id="page-label">文章管理</strong></div><span id="connection-status" class="connection-status">尚未连接</span><button id="mobile-logout" class="text-button">退出</button></header>
+      <div id="offline-notice" class="notice" hidden>离线试写模式：内容只在当前页面内存中，刷新即丢失。请用「导出 Markdown」保存；登录后才能云端保存和发布。</div>
+      <div id="publish-notice" class="notice success" hidden role="status"></div>
+      <section id="library-view" class="library">
+        <div class="library-heading"><div><p class="eyebrow">YOUR WORDS, YOUR GROWTH</p><h1>文章手记<span>。</span></h1><p class="muted">让零散的灵感，成为有迹可循的成长。</p></div><button id="new-post" class="button primary">＋ 新建文章</button></div>
+        <div class="stats-strip"><div><span class="stat-label">全部手记</span><strong id="stat-all">00</strong></div><div><span class="stat-label">正在酝酿</span><strong id="stat-draft">00</strong></div><div><span class="stat-label">已经分享</span><strong id="stat-published">00</strong></div><p>好好学习，天天向上。<br><span>Keep learning. Keep writing.</span></p></div>
+        <div class="list-toolbar"><h2 id="list-title">全部文章</h2><div class="search-tools"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索标题、文件名或分类" aria-label="搜索文章"></label><button id="refresh-list" class="icon-button" title="刷新文章" aria-label="刷新文章">↻</button></div></div>
+        <div class="article-table"><div class="table-heading"><span>文章 / ARTICLE</span><span>状态</span><span>编辑</span></div><div id="article-list" aria-live="polite"></div></div>
+        <p class="library-foot">草稿仅你可见。发布提交后，等待 GitHub 构建完成，博客才会更新。</p>
+      </section>
+      <section id="editor-view" class="editor" hidden>
+        <div class="editor-actions"><button id="back-library" class="text-button">← 文章列表</button><span id="save-status" role="status">未保存</span><div class="action-group"><button id="export-post" class="button quiet">导出 Markdown</button><button id="save-post" class="button secondary">保存草稿</button><button id="publish-post" class="button primary">发布文章 ↗</button></div></div>
+        <div class="editor-heading"><div><p class="eyebrow">MAKE ROOM FOR A NEW IDEA</p><h1 id="editing-title">新的学习手记</h1></div><div class="editor-options"><label><input id="autosave" type="checkbox" checked> 自动保存草稿</label><button id="focus-toggle" class="text-button" aria-pressed="false">专注模式</button></div></div>
+        <div class="mobile-tabs" role="group" aria-label="编辑器视图"><button class="active" id="show-write">Markdown</button><button id="show-preview">实时预览</button></div>
+        <div class="writing-desk" id="writing-desk">
+          <div class="write-pane"><div class="pane-title"><span><b>01</b> MARKDOWN</span><button id="help-toggle" class="text-button" aria-expanded="true">收起填写指引</button></div>
+            <div class="writing-guide" id="writing-guide"><strong>从这里开始，写下你的第一段。</strong><p>先改顶部 <code>title</code> 标题、<code>categories</code> 分类和 <code>tags</code> 标签，再写下方正文。保留两行 <code>---</code> 与 <code>abbrlink</code>，它会保持文章地址不变。</p><label for="template">新文章模板</label><select id="template"><option value="study">学习手记</option><option value="algorithm">算法题解</option><option value="daily">日常随笔</option></select><button id="apply-template" class="text-button">应用模板</button></div>
+            <div class="markdown-toolbar" role="group" aria-label="Markdown 快捷工具"><button data-insert="heading" title="二级标题">H₂</button><button data-insert="bold" title="加粗"><b>B</b></button><button data-insert="italic" title="斜体"><i>I</i></button><button data-insert="code" title="代码块">&lt;/&gt;</button><button data-insert="link" title="链接">↗ 链接</button><button data-insert="image" title="图片链接">▧ 图片</button><button data-insert="list" title="列表">☷</button></div>
+            <label for="markdown" class="sr-only">Markdown 文章内容（含文章信息）</label><textarea id="markdown" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="在这里写下你的文章…"></textarea>
+            <div class="pane-foot"><span id="word-count">0 字 · 0 行</span><span>Ctrl / ⌘ + S 保存</span></div>
+          </div>
+          <div class="preview-pane"><div class="pane-title"><span><b>02</b> LIVE PREVIEW</span><span class="live-label"><i></i> 实时预览</span></div><p id="preview-warning" class="preview-warning" hidden role="status"></p><iframe id="preview" title="文章实时预览" sandbox="" referrerpolicy="no-referrer"></iframe><div class="pane-foot"><span>预览不执行脚本或 Hexo 插件</span><span>最终样式以博客为准</span></div></div>
+        </div>
+        <footer class="editor-footer"><span id="file-label"></span><div><button id="discard-post" class="text-button" hidden>放弃草稿修改</button><button id="delete-post" class="text-button danger">删除文章</button></div></footer>
+      </section>
+    </main>
+  </div>
+  <dialog id="confirm-dialog"><form method="dialog"><p class="eyebrow">PLEASE CONFIRM</p><h2 id="confirm-title"></h2><p id="confirm-description"></p><div class="dialog-actions"><button value="cancel" class="button quiet">取消</button><button value="confirm" id="confirm-yes" class="button primary">确认</button></div></form></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

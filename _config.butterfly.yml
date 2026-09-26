@@ -22,6 +22,7 @@ menu:
   标签: /tags/ || fas fa-tags
   归档: /archives/ || fas fa-archive
   留言板: /comments/ || fas fa-envelope
+  写作间: /editor/ || fas fa-pen-nib
   # List||fas fa-list:
   #   Music: /music/ || fas fa-music
   #   Movie: /movies/ || fas fa-video

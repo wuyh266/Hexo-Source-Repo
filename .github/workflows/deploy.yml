@@ -31,6 +31,7 @@ jobs:
           
       - name: Build
         run: |
+          node tools/editor-metadata.mjs
           npm run clean
           npm run build
           npx --no-install gulp
