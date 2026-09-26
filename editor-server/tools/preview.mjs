@@ -23,10 +23,12 @@ export function renderPreview(raw, windowObject) {
 export function newTemplate(kind = 'study', now = new Date(), id = crypto.randomUUID().replaceAll('-', '').slice(0, 16)) {
   const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now);
   const bodies = {
+    project: '## 这次要做什么\n\n写下项目背景、想解决的问题，以及本次准备完成的目标。\n\n## 技术与环境\n\n- 编程语言与版本：\n- 框架与工具：\n- 运行环境：\n\n## 实现过程\n\n### 第一步：准备工作\n\n记录环境搭建、依赖安装与必要配置。请勿写入密码或密钥。\n\n### 第二步：实现功能\n\n按步骤说明实现方法，配上代码、命令或截图。代码请放在代码块中。\n\n```text\n在这里填写命令或代码，并把 text 改成对应语言，例如 bash、go 或 javascript。\n```\n\n## 遇到的问题\n\n### 问题现象\n\n记录报错内容与出现条件。\n\n### 排查与解决\n\n说明尝试了什么、问题原因，以及最终的解决方法。\n\n## 成果展示\n\n放上运行截图、演示地址或项目仓库链接。图片可以使用可公开访问的图片地址。\n\n## 收获与下一步\n\n- 这次学到了什么？\n- 还有哪些地方准备继续完善？\n',
     study: '# 本次学习的主题\n\n> 用一句话，记录今天最重要的收获。\n\n## 为什么学习它\n\n写下遇到的问题，或者这次学习的起点。\n\n## 我的理解\n\n按自己的思路解释，配上例子会更清楚。\n\n```cpp\n// 在这里放入代码或示例\n```\n\n## 总结与回顾\n\n- 今天学会了什么？\n- 还有什么值得继续探索？\n',
     algorithm: '## 题目\n\n描述题目要求、输入输出和约束。\n\n### 示例\n\n```text\n输入：\n输出：\n```\n\n## 解题思路\n\n先写直觉，再解释算法为何正确。\n\n## 代码实现\n\n```cpp\nclass Solution {\npublic:\n    // 在这里编写解法\n};\n```\n\n## 复杂度分析\n\n- 时间复杂度：\n- 空间复杂度：\n\n## 易错点\n\n记录边界条件，以及这次踩过的坑。\n',
     daily: '## 今天想记录的事\n\n从一个小小的瞬间开始吧。\n\n## 一些想法\n\n慢慢写，不必一次就想清楚。\n\n> 留下一句想对未来的自己说的话。\n'
   };
-  const category = kind === 'algorithm' ? '算法学习' : kind === 'daily' ? '生活随笔' : '学习笔记';
-  return `---\ntitle: "${kind === 'algorithm' ? '一道题的思考' : kind === 'daily' ? '今天的小小记录' : '新的学习手记'}"\ndate: "${date}"\ncategories:\n  - ${category}\ntags:\n  - ${kind === 'algorithm' ? 'C++' : '学习记录'}\nabbrlink: "${id}"\ndescription: "用一两句话概括这篇文章"\n---\n\n${bodies[kind] || bodies.study}`;
+  const category = kind === 'project' ? '项目实践' : kind === 'algorithm' ? '算法学习' : kind === 'daily' ? '生活随笔' : '学习笔记';
+  const title = kind === 'project' ? '项目实战手记：从零开始' : kind === 'algorithm' ? '一道题的思考' : kind === 'daily' ? '今天的小小记录' : '新的学习手记';
+  return `---\ntitle: "${title}"\ndate: "${date}"\ncategories:\n  - ${category}\ntags:\n  - ${kind === 'algorithm' ? 'C++' : '学习记录'}\nabbrlink: "${id}"\ndescription: "用一两句话概括这篇文章"\n---\n\n${bodies[kind] || bodies.study}`;
 }

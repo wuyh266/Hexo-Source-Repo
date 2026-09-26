@@ -9,7 +9,7 @@
   <title>写作间 · Decwoveh的学习周记</title>
   <link rel="icon" href="/img/favicon.png">
   <link rel="stylesheet" href="/editor/editor.css?v=website-settings-1">
-  <script type="module" src="/editor/app.js?v=preview-scroll-1"></script>
+  <script type="module" src="/editor/app.js?v=project-template-1"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -59,7 +59,7 @@
         <div class="mobile-tabs" role="group" aria-label="编辑器视图"><button class="active" id="show-write">Markdown</button><button id="show-preview">实时预览</button></div>
         <div class="writing-desk" id="writing-desk">
           <div class="write-pane"><div class="pane-title"><span><b>01</b> MARKDOWN</span><button id="help-toggle" class="text-button" aria-expanded="true">收起填写指引</button></div>
-            <div class="writing-guide" id="writing-guide"><strong>从这里开始，写下你的第一段。</strong><p>先改顶部 <code>title</code> 标题、<code>categories</code> 分类和 <code>tags</code> 标签，再写下方正文。保留两行 <code>---</code> 与 <code>abbrlink</code>，它会保持文章地址不变。</p><label for="template">新文章模板</label><select id="template"><option value="study">学习手记</option><option value="algorithm">算法题解</option><option value="daily">日常随笔</option></select><button id="apply-template" class="text-button">应用模板</button></div>
+            <div class="writing-guide" id="writing-guide"><strong>从这里开始，写下你的第一段。</strong><p>先改顶部 <code>title</code> 标题、<code>categories</code> 分类和 <code>tags</code> 标签，再写下方正文。保留两行 <code>---</code> 与 <code>abbrlink</code>，它会保持文章地址不变。</p><label for="template">新文章模板</label><select id="template"><option value="study">学习手记</option><option value="algorithm">算法题解</option><option value="project">项目实战手记</option><option value="daily">日常随笔</option></select><button id="apply-template" class="text-button">应用模板</button></div>
             <div class="markdown-toolbar" role="group" aria-label="Markdown 快捷工具"><button data-insert="heading" title="二级标题">H₂</button><button data-insert="bold" title="加粗"><b>B</b></button><button data-insert="italic" title="斜体"><i>I</i></button><button data-insert="code" title="代码块">&lt;/&gt;</button><button data-insert="link" title="链接">↗ 链接</button><button data-insert="image" title="图片链接">▧ 图片</button><button data-insert="list" title="列表">☷</button></div>
             <label for="markdown" class="sr-only">Markdown 文章内容（含文章信息）</label><textarea id="markdown" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="在这里写下你的文章…"></textarea>
             <div class="pane-foot"><span id="word-count">0 字 · 0 行</span><span>Ctrl / ⌘ + S 保存</span></div>
