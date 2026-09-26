@@ -4,6 +4,8 @@ db.json
 *.log
 node_modules/
 public/
+!editor-server/public/
+!editor-server/public/index.html
 .deploy*/
 .deploy_git*/
 .idea
