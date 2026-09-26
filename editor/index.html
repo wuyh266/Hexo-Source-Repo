@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https: http://localhost:4318 http://127.0.0.1:4318; frame-src 'self' about:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://blog-editor-pied.vercel.app; frame-src 'self' about:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>写作间 · Decwoveh的学习周记</title>
   <link rel="icon" href="/img/favicon.png">
   <link rel="stylesheet" href="/editor/editor.css">
-  <script type="module" src="/editor/app.js"></script>
+  <script type="module" src="/editor/app.js?v=fixed-origin-1"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -24,11 +24,10 @@
       <div class="little-symbol" aria-hidden="true">✎</div><p class="eyebrow">WELCOME BACK</p><h2>欢迎回到写作间</h2><p class="muted">登录后，继续上次还没写完的故事。</p>
       <form id="login-form">
         <label for="password">作者密码</label><input id="password" name="password" type="password" autocomplete="current-password" placeholder="输入独立的写作间密码" required maxlength="256">
-        <p id="endpoint-hint" class="field-note">正在读取编辑服务配置…</p>
+        <p class="field-note">使用你的作者密码登录，继续写作。</p>
         <button class="button primary wide" id="login-button" type="submit" disabled>进入写作间 <span>→</span></button>
         <p id="login-error" class="inline-error" role="alert"></p>
       </form>
-      <details id="connection-details" class="connection"><summary>首次使用 / 连接编辑服务</summary><p>填写独立文章后台的地址，不是 Waline 评论地址。密码只会发送到下方明确显示的服务。</p><label for="endpoint">后台网址</label><input id="endpoint" type="url" placeholder="https://你的编辑服务.vercel.app" autocomplete="off"><button id="connect-button" class="button secondary wide" type="button">保存连接地址</button><p>后台还没部署？可以先离线试写，体验 Markdown 和预览。</p></details>
       <button id="offline-button" class="text-button wide" type="button">先离线试写，不连接云端 ↗</button>
       <p class="login-foot">私人草稿 · 双栏预览 · 写好再发布</p>
     </div>

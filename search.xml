@@ -391,22 +391,22 @@
     
     
     <entry>
-      <title>分类</title>
-      <link href="/categories/index.html"/>
-      <url>/categories/index.html</url>
+      <title>留言板</title>
+      <link href="/comments/index.html"/>
+      <url>/comments/index.html</url>
       
-        <content type="html"><![CDATA[]]></content>
+        <content type="html"><![CDATA[<h2 id="💬-欢迎留言交流"><a href="#💬-欢迎留言交流" class="headerlink" title="💬 欢迎留言交流"></a>💬 欢迎留言交流</h2><p>有什么想说的、想问的、想吐槽的，都可以在这里留言哦！</p><hr><p><em>无需注册账户，直接输入昵称和评论即可</em></p>]]></content>
       
     </entry>
     
     
     
     <entry>
-      <title>留言板</title>
-      <link href="/comments/index.html"/>
-      <url>/comments/index.html</url>
+      <title>分类</title>
+      <link href="/categories/index.html"/>
+      <url>/categories/index.html</url>
       
-        <content type="html"><![CDATA[<h2 id="💬-欢迎留言交流"><a href="#💬-欢迎留言交流" class="headerlink" title="💬 欢迎留言交流"></a>💬 欢迎留言交流</h2><p>有什么想说的、想问的、想吐槽的，都可以在这里留言哦！</p><hr><p><em>无需注册账户，直接输入昵称和评论即可</em></p>]]></content>
+        <content type="html"><![CDATA[]]></content>
       
     </entry>
     
@@ -424,22 +424,22 @@
     
     
     <entry>
-      <title>标签</title>
-      <link href="/tags/index.html"/>
-      <url>/tags/index.html</url>
+      <title></title>
+      <link href="/js/statistics-fix.js"/>
+      <url>/js/statistics-fix.js</url>
       
-        <content type="html"><![CDATA[]]></content>
+        <content type="html"><![CDATA[// 统计数据显示优化document.addEventListener('DOMContentLoaded', function() {  // 处理不蒜子统计加载超时  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 5000); // 5秒后如果还没加载完成就显示0  // 处理评论数显示  setTimeout(function() {    const commentCountElements = document.querySelectorAll('.card-post-count');    commentCountElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('loading')) {        element.innerHTML = '0';      }    });  }, 3000); // 3秒后如果还没加载完成就显示0});// 监听页面变化（用于pjax）document.addEventListener('pjax:complete', function() {  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 3000);});]]></content>
       
     </entry>
     
     
     
     <entry>
-      <title></title>
-      <link href="/js/statistics-fix.js"/>
-      <url>/js/statistics-fix.js</url>
+      <title>标签</title>
+      <link href="/tags/index.html"/>
+      <url>/tags/index.html</url>
       
-        <content type="html"><![CDATA[// 统计数据显示优化document.addEventListener('DOMContentLoaded', function() {  // 处理不蒜子统计加载超时  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 5000); // 5秒后如果还没加载完成就显示0  // 处理评论数显示  setTimeout(function() {    const commentCountElements = document.querySelectorAll('.card-post-count');    commentCountElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('loading')) {        element.innerHTML = '0';      }    });  }, 3000); // 3秒后如果还没加载完成就显示0});// 监听页面变化（用于pjax）document.addEventListener('pjax:complete', function() {  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 3000);});]]></content>
+        <content type="html"><![CDATA[]]></content>
       
     </entry>
     
