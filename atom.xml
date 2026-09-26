@@ -67,6 +67,39 @@
   </entry>
   
   <entry>
+    <title>尽可能使字符串相等：预算限制下的滑动窗口</title>
+    <link href="https://542501.xyz/posts/5c8a662e.html"/>
+    <id>https://542501.xyz/posts/5c8a662e.html</id>
+    <published>2026-09-25T00:00:00.000Z</published>
+    <updated>2026-09-25T00:00:00.000Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你两个长度相同的字符串 <code>s</code> 和 <code>t</code>。</p><p>将 <code>s</code> 中的第 <code>i</code> 个字符变到 <code>t</code> 中的第 <code>i</code> 个字符，需要 <code>|s[i] - t[i]|</code> 的开销（开销可能为 0），也就是两个字符的 ASCII 码值之差的绝对值。</p><p>用于变更字符串的最大预算是 <code>maxCost</code>。在转化字符串时，总开销应当小于等于该预算，这也意味着字符串的转化可能是不完全的。</p><p>如果可以将 <code>s</code> 的子字符串转化为它在 <code>t</code> 中对应的子字符串，则返回可以转化的最大长度。如果不存在这样的子字符串，则返回 0。</p><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题主要注意一个地方：字符变换所选的位置必须连续，因此也可以归入滑动窗口这一类。</p><p>先计算每个位置的转换开销，再维护区间的开销和。</p><span id="more"></span><h2 id="C-题解（保留原实现）"><a href="#C-题解（保留原实现）" class="headerlink" title="C++ 题解（保留原实现）"></a>C++ 题解（保留原实现）</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">equalSubstring</span><span class="params">(string s, string t, <span class="type">int</span> maxCost)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> scost=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> ans1=<span class="number">0</span>;</span><br><span class="line">        vector&lt;<span class="type">int</span>&gt;arr;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;s.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            <span class="type">int</span> ASCIIS=s[i]-<span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">            <span class="type">int</span> ASCIIT=t[i]-<span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">            scost=<span class="built_in">abs</span>(ASCIIS-ASCIIT);</span><br><span class="line">            arr.<span class="built_in">push_back</span>(scost);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;s.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            ans=ans+arr[i];</span><br><span class="line">            <span class="keyword">if</span>(ans&lt;=maxCost)&#123;</span><br><span class="line">                </span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                ans=ans-arr[left];</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans1=<span class="built_in">max</span>(ans1,i-left<span class="number">+1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><h2 id="整理补注"><a href="#整理补注" class="headerlink" title="整理补注"></a>整理补注</h2><p>这里保留了原代码的 <code>if/else</code> 写法。它与每轮都用 <code>while</code> 收缩到合法窗口的写法不同：预算超出时只移出一个元素，当前窗口可能仍然不合法，但窗口长度不会减小。</p><p>由于每个位置的开销非负，窗口长度只有在扩展后的总开销不超过预算时才会增长，因此这份写法可以用于求最大长度；不能直接把每一轮的窗口都当作一个合法答案区间。</p><p>另外，计算两个字符的差值时，两边都减去 <code>&#39;0&#39;</code> 会相互抵消，因此这里也可以直接计算 <code>abs(s[i] - t[i])</code>。</p>]]></content>
+    
+    
+    <summary type="html">&lt;blockquote&gt;
+&lt;p&gt;本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h2&gt;&lt;p&gt;给你两个长度相同的字符串 &lt;code&gt;s&lt;/code&gt; 和 &lt;code&gt;t&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;将 &lt;code&gt;s&lt;/code&gt; 中的第 &lt;code&gt;i&lt;/code&gt; 个字符变到 &lt;code&gt;t&lt;/code&gt; 中的第 &lt;code&gt;i&lt;/code&gt; 个字符，需要 &lt;code&gt;|s[i] - t[i]|&lt;/code&gt; 的开销（开销可能为 0），也就是两个字符的 ASCII 码值之差的绝对值。&lt;/p&gt;
+&lt;p&gt;用于变更字符串的最大预算是 &lt;code&gt;maxCost&lt;/code&gt;。在转化字符串时，总开销应当小于等于该预算，这也意味着字符串的转化可能是不完全的。&lt;/p&gt;
+&lt;p&gt;如果可以将 &lt;code&gt;s&lt;/code&gt; 的子字符串转化为它在 &lt;code&gt;t&lt;/code&gt; 中对应的子字符串，则返回可以转化的最大长度。如果不存在这样的子字符串，则返回 0。&lt;/p&gt;
+&lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题主要注意一个地方：字符变换所选的位置必须连续，因此也可以归入滑动窗口这一类。&lt;/p&gt;
+&lt;p&gt;先计算每个位置的转换开销，再维护区间的开销和。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="算法学习" scheme="https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="C++" scheme="https://542501.xyz/tags/C/"/>
+    
+    <category term="滑动窗口" scheme="https://542501.xyz/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
+    
+    <category term="不定长滑动窗口" scheme="https://542501.xyz/tags/%E4%B8%8D%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
+    
+  </entry>
+  
+  <entry>
     <title>水果成篮：最多两种元素的滑动窗口</title>
     <link href="https://542501.xyz/posts/796d9a18.html"/>
     <id>https://542501.xyz/posts/796d9a18.html</id>
@@ -185,39 +218,6 @@
 &lt;p&gt;解释：必须删除一个元素。&lt;/p&gt;
 &lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题很有意思，处理方式也非常巧妙，但是依旧可以沿用不定长滑动窗口的做法。&lt;/p&gt;
 &lt;p&gt;维护一个最多包含一个 0 的窗口。因为必须删除一个元素，所以候选答案是窗口长度减一，即 &lt;code&gt;right-left&lt;/code&gt;。即使整个窗口都是 1，也必须减一。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="算法学习" scheme="https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/"/>
-    
-    
-    <category term="C++" scheme="https://542501.xyz/tags/C/"/>
-    
-    <category term="滑动窗口" scheme="https://542501.xyz/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
-    
-    <category term="不定长滑动窗口" scheme="https://542501.xyz/tags/%E4%B8%8D%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>尽可能使字符串相等：预算限制下的滑动窗口</title>
-    <link href="https://542501.xyz/posts/5c8a662e.html"/>
-    <id>https://542501.xyz/posts/5c8a662e.html</id>
-    <published>2026-09-25T00:00:00.000Z</published>
-    <updated>2026-09-25T00:00:00.000Z</updated>
-    
-    <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你两个长度相同的字符串 <code>s</code> 和 <code>t</code>。</p><p>将 <code>s</code> 中的第 <code>i</code> 个字符变到 <code>t</code> 中的第 <code>i</code> 个字符，需要 <code>|s[i] - t[i]|</code> 的开销（开销可能为 0），也就是两个字符的 ASCII 码值之差的绝对值。</p><p>用于变更字符串的最大预算是 <code>maxCost</code>。在转化字符串时，总开销应当小于等于该预算，这也意味着字符串的转化可能是不完全的。</p><p>如果可以将 <code>s</code> 的子字符串转化为它在 <code>t</code> 中对应的子字符串，则返回可以转化的最大长度。如果不存在这样的子字符串，则返回 0。</p><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题主要注意一个地方：字符变换所选的位置必须连续，因此也可以归入滑动窗口这一类。</p><p>先计算每个位置的转换开销，再维护区间的开销和。</p><span id="more"></span><h2 id="C-题解（保留原实现）"><a href="#C-题解（保留原实现）" class="headerlink" title="C++ 题解（保留原实现）"></a>C++ 题解（保留原实现）</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">equalSubstring</span><span class="params">(string s, string t, <span class="type">int</span> maxCost)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> scost=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> ans1=<span class="number">0</span>;</span><br><span class="line">        vector&lt;<span class="type">int</span>&gt;arr;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;s.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            <span class="type">int</span> ASCIIS=s[i]-<span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">            <span class="type">int</span> ASCIIT=t[i]-<span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">            scost=<span class="built_in">abs</span>(ASCIIS-ASCIIT);</span><br><span class="line">            arr.<span class="built_in">push_back</span>(scost);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;s.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            ans=ans+arr[i];</span><br><span class="line">            <span class="keyword">if</span>(ans&lt;=maxCost)&#123;</span><br><span class="line">                </span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                ans=ans-arr[left];</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans1=<span class="built_in">max</span>(ans1,i-left<span class="number">+1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><h2 id="整理补注"><a href="#整理补注" class="headerlink" title="整理补注"></a>整理补注</h2><p>这里保留了原代码的 <code>if/else</code> 写法。它与每轮都用 <code>while</code> 收缩到合法窗口的写法不同：预算超出时只移出一个元素，当前窗口可能仍然不合法，但窗口长度不会减小。</p><p>由于每个位置的开销非负，窗口长度只有在扩展后的总开销不超过预算时才会增长，因此这份写法可以用于求最大长度；不能直接把每一轮的窗口都当作一个合法答案区间。</p><p>另外，计算两个字符的差值时，两边都减去 <code>&#39;0&#39;</code> 会相互抵消，因此这里也可以直接计算 <code>abs(s[i] - t[i])</code>。</p>]]></content>
-    
-    
-    <summary type="html">&lt;blockquote&gt;
-&lt;p&gt;本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h2&gt;&lt;p&gt;给你两个长度相同的字符串 &lt;code&gt;s&lt;/code&gt; 和 &lt;code&gt;t&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;将 &lt;code&gt;s&lt;/code&gt; 中的第 &lt;code&gt;i&lt;/code&gt; 个字符变到 &lt;code&gt;t&lt;/code&gt; 中的第 &lt;code&gt;i&lt;/code&gt; 个字符，需要 &lt;code&gt;|s[i] - t[i]|&lt;/code&gt; 的开销（开销可能为 0），也就是两个字符的 ASCII 码值之差的绝对值。&lt;/p&gt;
-&lt;p&gt;用于变更字符串的最大预算是 &lt;code&gt;maxCost&lt;/code&gt;。在转化字符串时，总开销应当小于等于该预算，这也意味着字符串的转化可能是不完全的。&lt;/p&gt;
-&lt;p&gt;如果可以将 &lt;code&gt;s&lt;/code&gt; 的子字符串转化为它在 &lt;code&gt;t&lt;/code&gt; 中对应的子字符串，则返回可以转化的最大长度。如果不存在这样的子字符串，则返回 0。&lt;/p&gt;
-&lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题主要注意一个地方：字符变换所选的位置必须连续，因此也可以归入滑动窗口这一类。&lt;/p&gt;
-&lt;p&gt;先计算每个位置的转换开销，再维护区间的开销和。&lt;/p&gt;</summary>
     
     
     
@@ -492,7 +492,7 @@
     <link href="https://542501.xyz/posts/36208.html"/>
     <id>https://542501.xyz/posts/36208.html</id>
     <published>2025-08-20T14:51:31.000Z</published>
-    <updated>2026-09-26T12:12:41.957Z</updated>
+    <updated>2026-09-26T12:23:28.439Z</updated>
     
     <content type="html"><![CDATA[<h1 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h1><p>这是我的第一篇blog，有些紧张，也有点粗糙，我也会把他尽量的弄得好看些，这篇blog应该会是我相当于笔记本的一个东西，用来记录深度学习的一些内容，因为我发现我经常看了后面忘前面，现在要好好整理一下了，应该会直接从CNN开始，跳过python基础，当然，如果我发现我的python也忘记了的话，我可能又会去补一个python的专栏。第一篇大概就是这么多,开学之后尽量一周一更</p>]]></content>
     
