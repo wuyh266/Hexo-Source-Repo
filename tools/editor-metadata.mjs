@@ -12,7 +12,11 @@ for (const id of await readdir('source/_posts')) {
   const abbrlink = String(data.abbrlink ?? '');
   if (abbrlink && links.has(abbrlink)) throw new Error(`Duplicate article abbrlink: ${abbrlink}`);
   if (abbrlink) links.add(abbrlink);
-  metadata[id] = { title: data.title || id, categories: Array.isArray(data.categories) ? data.categories.flat() : [] };
+  metadata[id] = {
+    title: data.title || id,
+    categories: Array.isArray(data.categories) ? data.categories.flat() : [],
+    date: typeof data.date === 'string' ? data.date : ''
+  };
 }
 await mkdir('source/editor', { recursive: true });
 await writeFile('source/editor/published.json', JSON.stringify(metadata, null, 2) + '\n');

@@ -1,4 +1,5 @@
 import { assertId, checkContent, EditorError, preparePublish, summary } from './content.mjs';
+import { compareArticlesNewestFirst } from './article-order.mjs';
 
 export function createService(store, github, config) {
   async function withLock(id, work) {
@@ -15,7 +16,7 @@ export function createService(store, github, config) {
       const [files, drafts] = await Promise.all([github.list(), store.list()]);
       const rows = new Map(files.map(file => [file.id, { ...file, title: file.title || file.id.replace(/\.md$/, ''), categories: file.categories || [], status: 'published', version: 0 }]));
       for (const draft of drafts) rows.set(draft.id, { ...rows.get(draft.id), id: draft.id, ...summary(draft.content, draft.id), status: rows.has(draft.id) ? 'changed' : 'draft', version: draft.version, updatedAt: draft.updated_at });
-      return { articles: [...rows.values()].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))), actionsUrl: `https://github.com/${config.repository}/actions` };
+      return { articles: [...rows.values()].sort(compareArticlesNewestFirst), actionsUrl: `https://github.com/${config.repository}/actions` };
     }
     const id = assertId(input.id);
     if (action === 'get') {

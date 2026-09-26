@@ -1,5 +1,6 @@
 import { readMarkdown, renderPreview, newTemplate } from './preview.mjs';
 import { mountSettings } from './settings-app.mjs';
+import { compareArticlesNewestFirst } from '../lib/article-order.mjs';
 
 const $ = selector => document.querySelector(selector);
 // The credential destination is fixed at build time, never read from browser storage or URL parameters.
@@ -74,7 +75,9 @@ function renderList() {
   $('#list-title').textContent = { all: '全部文章', draft: '草稿箱', published: '已发布文章' }[state.filter];
   document.querySelectorAll('[data-filter]').forEach(button => button.classList.toggle('active', button.dataset.filter === state.filter));
   const needle = $('#search').value.trim().toLowerCase();
-  const list = state.articles.filter(a => (state.filter === 'all' || (state.filter === 'draft' ? a.status !== 'published' : a.status !== 'draft')) && `${a.title} ${a.id} ${(a.categories || []).join(' ')}`.toLowerCase().includes(needle));
+  const list = state.articles
+    .filter(a => (state.filter === 'all' || (state.filter === 'draft' ? a.status !== 'published' : a.status !== 'draft')) && `${a.title} ${a.id} ${(a.categories || []).join(' ')}`.toLowerCase().includes(needle))
+    .sort(compareArticlesNewestFirst);
   const container = $('#article-list'); container.replaceChildren();
   if (!list.length) {
     const empty = document.createElement('div'); empty.className = 'empty-state';
@@ -92,11 +95,13 @@ function renderList() {
 }
 async function refreshLibrary() {
   if (!state.offline) {
-    const data = await request('list'); state.articles = data.articles;
+    const rememberedDates = new Map(state.articles.map(article => [article.id, article.date]).filter(([, date]) => date));
+    const data = await request('list');
+    state.articles = data.articles.map(article => ({ ...article, date: article.date || rememberedDates.get(article.id) || '' }));
     // Public metadata is only a title hint; GitHub remains authoritative for files and versions.
     try {
       const meta = await fetch('/editor/published.json', { cache: 'no-store' }).then(r => r.json());
-      state.articles = state.articles.map(article => article.status === 'published' && meta[article.id] ? { ...article, title: meta[article.id].title, categories: meta[article.id].categories } : article);
+      state.articles = state.articles.map(article => article.status === 'published' && meta[article.id] ? { ...article, title: meta[article.id].title, categories: meta[article.id].categories, date: meta[article.id].date || article.date } : article);
     } catch { /* filenames remain usable if the static metadata has not been deployed */ }
   }
   renderList();
@@ -120,7 +125,7 @@ async function saveDraft() {
   const data = await request('save', { id: state.current.id, content, version: state.current.version, baseSha: state.current.baseSha });
   state.current.version = data.version; state.current.content = content; state.saved = content;
   const parsed = readMarkdown(content);
-  const row = { id: state.current.id, title: parsed.title, categories: Array.isArray(parsed.data.categories) ? parsed.data.categories.flat() : [], status: state.current.publishedSha ? 'changed' : 'draft', version: data.version, updatedAt: data.updatedAt };
+  const row = { id: state.current.id, title: parsed.title, categories: Array.isArray(parsed.data.categories) ? parsed.data.categories.flat() : [], date: typeof parsed.data.date === 'string' ? parsed.data.date : '', status: state.current.publishedSha ? 'changed' : 'draft', version: data.version, updatedAt: data.updatedAt };
   state.articles = [row, ...state.articles.filter(item => item.id !== row.id)]; renderList(); updateStatus();
   if (dirty() && $('#autosave').checked) saveTimer = setTimeout(() => { if (!state.busy) run(() => saveDraft()); }, 3000);
 }

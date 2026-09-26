@@ -8,7 +8,7 @@ const bundle = await readFile(new URL('../../source/editor/app.js', import.meta.
 const initialSettings = JSON.parse(await readFile(new URL('../../site-settings.json', import.meta.url), 'utf8'));
 async function waitFor(predicate) { for (let i = 0; i < 300; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 10)); } throw Error('UI condition timed out'); }
 function setup(apiBase = '', seedLegacyEndpoint = false) {
-  const messages = [], requests = [], drafts = new Map(), published = new Map();
+  const messages = [], requests = [], drafts = new Map(), published = new Map(), metadata = {};
   let expire = false, failPublish = false;
   let websiteData = structuredClone(initialSettings), websiteSha = 'a'.repeat(40);
   const vc = new VirtualConsole(); vc.on('jsdomError', error => messages.push(error.message));
@@ -19,7 +19,7 @@ function setup(apiBase = '', seedLegacyEndpoint = false) {
   w.HTMLDialogElement.prototype.close = function(value) { this.returnValue = value; this.open = false; this.dispatchEvent(new w.Event('close')); };
   w.fetch = async (url, options = {}) => {
     if (url === '/editor/config.json') return { json: async () => ({ apiBase }) };
-    if (url === '/editor/published.json') return { json: async () => ({}) };
+    if (url === '/editor/published.json') return { json: async () => structuredClone(metadata) };
     const input = JSON.parse(options.body); requests.push({ url, input, options });
     let status = 200, result;
     if (input.action === 'login') result = { token: 'test-owner-token' };
@@ -28,7 +28,11 @@ function setup(apiBase = '', seedLegacyEndpoint = false) {
     else if (input.action === 'settings.save') { websiteData = structuredClone(input.settings); websiteSha = 'b'.repeat(40); result = { settings: structuredClone(websiteData), sha: websiteSha, submitted: true, actionsUrl: 'https://github.com/owner/blog/actions' }; }
     else if (input.action === 'list') {
       const all = new Map([...published].map(([id, p]) => [id, { id, title: id, status: 'published', version: 0, sha: p.sha }]));
-      for (const [id, draft] of drafts) all.set(id, { id, title: '新的学习手记', status: published.has(id) ? 'changed' : 'draft', version: draft.version });
+      for (const [id, draft] of drafts) {
+        const title = /^title:\s*(.+)$/m.exec(draft.content)?.[1] || '新的学习手记';
+        const date = /^date:\s*(.+)$/m.exec(draft.content)?.[1] || '';
+        all.set(id, { id, title, date, status: published.has(id) ? 'changed' : 'draft', version: draft.version });
+      }
       result = { articles: [...all.values()] };
     } else if (input.action === 'save') { const version = (drafts.get(input.id)?.version || 0) + 1; drafts.set(input.id, { ...input, version }); result = { version, updatedAt: new Date().toISOString() }; }
     else if (input.action === 'get') { const draft = drafts.get(input.id), online = published.get(input.id); result = { id: input.id, content: draft?.content || online.content, baseSha: online?.sha || null, publishedSha: online?.sha || null, version: draft?.version || 0 }; }
@@ -50,7 +54,7 @@ function setup(apiBase = '', seedLegacyEndpoint = false) {
   const confirm = async () => { await waitFor(() => $('#confirm-dialog').open); $('#confirm-dialog').close('confirm'); };
   const idle = () => waitFor(() => !w.document.body.classList.contains('busy'));
   const login = async () => { await waitFor(() => !$('#login-button').disabled); type('#password', 'test-password'); $('#login-form').dispatchEvent(new w.Event('submit', { cancelable: true })); await waitFor(() => !$('#workspace').hidden); await idle(); };
-  return { dom, w, $, click, type, confirm, idle, login, requests, drafts, published, messages, expire() { expire = true; }, recover() { expire = false; }, failPublish() { failPublish = true; } };
+  return { dom, w, $, click, type, confirm, idle, login, requests, drafts, published, metadata, messages, expire() { expire = true; }, recover() { expire = false; }, failPublish() { failPublish = true; } };
 }
 test('offline experience shows explicit limits, template, safe preview and mobile tabs', async () => {
   const f = setup(); try {
@@ -108,6 +112,20 @@ test('credentials use only fixed production origin despite legacy storage, confi
     assert.ok(f.requests.every(r => r.url === 'https://blog-editor-pied.vercel.app/api/editor' && r.options.redirect === 'error'));
     const policy = f.$('meta[http-equiv="Content-Security-Policy"]').content;
     assert.equal(policy.split(';').map(v => v.trim()).find(v => v.startsWith('connect-src ')), "connect-src 'self' https://blog-editor-pied.vercel.app");
+    assert.deepEqual(f.messages, []);
+  } finally { f.dom.window.close(); }
+});
+test('article library sorts drafts and published posts by creation date, newest first', async () => {
+  const f = setup(); try {
+    f.published.set('older.md', { sha: 'a'.repeat(40), content: 'older' });
+    f.published.set('middle.md', { sha: 'b'.repeat(40), content: 'middle' });
+    f.metadata['older.md'] = { title: '最早发布', categories: [], date: '2025-01-01 08:00:00' };
+    f.metadata['middle.md'] = { title: '中间发布', categories: [], date: '2026-05-01 08:00:00' };
+    f.drafts.set('newest.md', { version: 4, updatedAt: '2020-01-01T00:00:00Z', content: '---\ntitle: 最新草稿\ndate: 2026-09-26 09:30:00\n---\n正文' });
+    await f.login();
+    assert.deepEqual([...f.w.document.querySelectorAll('.article-row strong')].map(node => node.textContent), ['最新草稿', '中间发布', '最早发布']);
+    f.type('#search', '发布');
+    assert.deepEqual([...f.w.document.querySelectorAll('.article-row strong')].map(node => node.textContent), ['中间发布', '最早发布']);
     assert.deepEqual(f.messages, []);
   } finally { f.dom.window.close(); }
 });

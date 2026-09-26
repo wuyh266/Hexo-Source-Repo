@@ -7,6 +7,7 @@ import { createService } from '../lib/service.mjs';
 import { createHandler } from '../api/editor.js';
 import { createGithub } from '../lib/github.mjs';
 import { newTemplate, renderPreview } from '../tools/preview.mjs';
+import { articleTimestamp, compareArticlesNewestFirst } from '../lib/article-order.mjs';
 import { JSDOM } from 'jsdom';
 
 const config = { password: 'a-private-test-password', secret: 'a-test-secret-at-least-thirty-two-characters', repository: 'owner/blog', branch: 'main', blogUrl: 'https://example.com', origins: ['https://example.com'], githubToken: 'test-token' };
@@ -45,6 +46,16 @@ test('signed login tokens reject tampering, expiry and malformed claims', () => 
   assert.throws(() => authenticate(`Bearer ${token}`, { ...config, secret: 'different' }, now));
 });
 test('private draft saves never write to GitHub', async () => { const f = fixture(), post = await saved(f); assert.equal(f.drafts.size, 1); assert.equal(f.published.size, 0); assert.equal(f.commits, 0); assert.equal((await f.service({ action: 'get', id: post.id })).content, post.content); });
+test('articles use frontmatter creation date for newest-first order', async () => {
+  const f = fixture();
+  f.drafts.set('old.md', { id: 'old.md', content: '---\ntitle: 旧文章\ndate: 2025-01-01 08:00:00\n---\n正文', base_sha: null, version: 3, updated_at: '2026-12-31T23:59:59Z' });
+  f.drafts.set('new.md', { id: 'new.md', content: '---\ntitle: 新文章\ndate: 2026-09-26 09:30:00\n---\n正文', base_sha: null, version: 1, updated_at: '2026-01-01T00:00:00Z' });
+  const articles = (await f.service({ action: 'list' })).articles;
+  assert.deepEqual(articles.map(article => article.id), ['new.md', 'old.md']);
+  assert.equal(articles[0].date, '2026-09-26 09:30:00');
+  assert.ok(articleTimestamp('2026-09-26 09:30:00') > articleTimestamp('2026-09-25T23:59:59+08:00'));
+  assert.deepEqual([{ id: 'aaa-missing' }, { id: 'zzz-dated', date: '2026-01-01' }].sort(compareArticlesNewestFirst).map(article => article.id), ['zzz-dated', 'aaa-missing']);
+});
 test('draft can retain incomplete YAML but publish rejects it', async () => { const f = fixture(), post = await saved(f, { ...newPost(), content: 'unfinished note' }); await assert.rejects(f.service({ action: 'publish', id: post.id, version: post.version }), { status: 400 }); assert.equal(f.drafts.size, 1); });
 test('new draft to publish round trip', async () => { const f = fixture(), post = await saved(f); const result = await f.service({ action: 'publish', id: post.id, version: post.version }); assert.equal(result.submitted, true); assert.match(result.url, /\/posts\/[a-f0-9]{32}\.html$/); assert.equal(f.drafts.size, 0); assert.equal(f.commits, 1); const loaded = await f.service({ action: 'get', id: post.id }); assert.equal(loaded.status, 'published'); assert.equal(loaded.version, 0); assert.equal(splitContent(loaded.content).data.layout, 'post'); });
 test('editing published article keeps live content unchanged until publish', async () => { const f = fixture(), post = await saved(f); await f.service({ action: 'publish', id: post.id, version: 1 }); const current = await f.service({ action: 'get', id: post.id }); await f.service({ action: 'save', ...current, content: current.content + '\nprivate addition' }); assert.equal(f.commits, 1); assert.ok(!f.published.get(post.id).content.includes('private addition')); assert.equal((await f.service({ action: 'list' })).articles[0].status, 'changed'); });

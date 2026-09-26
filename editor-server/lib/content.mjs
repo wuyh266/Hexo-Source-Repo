@@ -25,8 +25,12 @@ export function splitContent(content) {
 export function summary(content, fallback) {
   try {
     const { data } = splitContent(content);
-    return { title: typeof data.title === 'string' ? data.title : fallback, categories: Array.isArray(data.categories) ? data.categories.flat().filter(v => typeof v === 'string').slice(0, 5) : [] };
-  } catch { return { title: fallback, categories: [] }; }
+    return {
+      title: typeof data.title === 'string' ? data.title : fallback,
+      categories: Array.isArray(data.categories) ? data.categories.flat().filter(v => typeof v === 'string').slice(0, 5) : [],
+      date: typeof data.date === 'string' ? data.date : ''
+    };
+  } catch { return { title: fallback, categories: [], date: '' }; }
 }
 export function preparePublish(draft, existing) {
   const { data, body } = splitContent(checkContent(draft.content));
