@@ -9,7 +9,7 @@
   <title>写作间 · Decwoveh的学习周记</title>
   <link rel="icon" href="/img/favicon.png">
   <link rel="stylesheet" href="/editor/editor.css?v=website-settings-1">
-  <script type="module" src="/editor/app.js?v=article-date-order-1"></script>
+  <script type="module" src="/editor/app.js?v=preview-scroll-1"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -64,7 +64,7 @@
             <label for="markdown" class="sr-only">Markdown 文章内容（含文章信息）</label><textarea id="markdown" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="在这里写下你的文章…"></textarea>
             <div class="pane-foot"><span id="word-count">0 字 · 0 行</span><span>Ctrl / ⌘ + S 保存</span></div>
           </div>
-          <div class="preview-pane"><div class="pane-title"><span><b>02</b> LIVE PREVIEW</span><span class="live-label"><i></i> 实时预览</span></div><p id="preview-warning" class="preview-warning" hidden role="status"></p><iframe id="preview" title="文章实时预览" sandbox="" referrerpolicy="no-referrer"></iframe><div class="pane-foot"><span>预览不执行脚本或 Hexo 插件</span><span>最终样式以博客为准</span></div></div>
+          <div class="preview-pane"><div class="pane-title"><span><b>02</b> LIVE PREVIEW</span><span class="live-label"><i></i> 实时预览</span></div><p id="preview-warning" class="preview-warning" hidden role="status"></p><iframe id="preview" title="文章实时预览" sandbox="allow-same-origin" referrerpolicy="no-referrer"></iframe><div class="pane-foot"><span>预览不执行脚本或 Hexo 插件</span><span>最终样式以博客为准</span></div></div>
         </div>
         <footer class="editor-footer"><span id="file-label"></span><div><button id="discard-post" class="text-button" hidden>放弃草稿修改</button><button id="delete-post" class="text-button danger">删除文章</button></div></footer>
       </section>
