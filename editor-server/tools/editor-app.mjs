@@ -1,8 +1,10 @@
 import { readMarkdown, renderPreview, newTemplate } from './preview.mjs';
 import { mountSettings } from './settings-app.mjs';
+import { connectPreviewScroll } from './preview-scroll.mjs';
 import { compareArticlesNewestFirst } from '../lib/article-order.mjs';
 
 const $ = selector => document.querySelector(selector);
+const previewScroll = connectPreviewScroll($('#markdown'), $('#preview'));
 // The credential destination is fixed at build time, never read from browser storage or URL parameters.
 const EDITOR_API = 'https://blog-editor-pied.vercel.app';
 const state = { token: '', offline: false, articles: [], current: null, saved: '', filter: 'all', busy: false, revision: 0 };
@@ -49,7 +51,7 @@ function updateStatus(message) {
 function updatePreview() {
   const text = $('#markdown').value;
   const rendered = renderPreview(text, window);
-  $('#preview').srcdoc = rendered.html;
+  previewScroll.update(rendered.html);
   $('#editing-title').textContent = rendered.title;
   $('#preview-warning').hidden = !rendered.warning;
   $('#preview-warning').textContent = rendered.warning;
@@ -111,6 +113,7 @@ async function canLeave() {
 }
 function showEditor(article) {
   websiteSettings.hide();
+  previewScroll.reset();
   clearTimeout(saveTimer); clearTimeout(previewTimer); state.current = article; state.saved = article.content; state.revision++;
   $('#markdown').value = article.content; $('#file-label').textContent = `source/_posts/${article.id}`;
   $('#library-view').hidden = true; $('#editor-view').hidden = false; $('#page-label').textContent = '撰写手记'; $('#publish-notice').hidden = true;
