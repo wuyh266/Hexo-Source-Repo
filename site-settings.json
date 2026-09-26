@@ -1,20 +1,40 @@
 {
   "title": "Decwoveh的学习周记",
   "subtitle": "好好学习，天天向上",
-  "subtitleEnabled": false,
   "description": "志于好好学习",
   "author": "Decwoveh",
   "avatar": "/img/touxiang.png",
-  "announcementEnabled": true,
-  "announcement": "本网站仅学习使用，各个功能还在实现中,無钱买好的数据库，故切勿登录以及在评论下面追加评论（登录是给有钱了之后搞得接口，别点！）评论加邮箱可显示QQ头像，否则全默认",
+  "announcement": "一定要好好学习的呀",
   "footerText": "",
-  "followText": "Follow Me",
+  "followText": "速速关注我",
   "followUrl": "https://github.com/wuyh266",
+  "subtitleEnabled": false,
+  "announcementEnabled": true,
   "menu": [
-    { "label": "首页", "url": "/", "icon": "fas fa-home" },
-    { "label": "标签", "url": "/tags/", "icon": "fas fa-tags" },
-    { "label": "归档", "url": "/archives/", "icon": "fas fa-archive" },
-    { "label": "留言板", "url": "/comments/", "icon": "fas fa-envelope" },
-    { "label": "写作间", "url": "/editor/", "icon": "fas fa-pen-nib" }
+    {
+      "label": "首页",
+      "url": "/",
+      "icon": "fas fa-home"
+    },
+    {
+      "label": "标签",
+      "url": "/tags/",
+      "icon": "fas fa-tags"
+    },
+    {
+      "label": "归档",
+      "url": "/archives/",
+      "icon": "fas fa-archive"
+    },
+    {
+      "label": "留言板",
+      "url": "/comments/",
+      "icon": "fas fa-envelope"
+    },
+    {
+      "label": "写作间",
+      "url": "/editor/",
+      "icon": "fas fa-pen-nib"
+    }
   ]
 }
