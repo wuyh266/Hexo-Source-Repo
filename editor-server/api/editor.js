@@ -4,6 +4,7 @@ import { createStore } from '../lib/store.mjs';
 import { createGithub } from '../lib/github.mjs';
 import { createService } from '../lib/service.mjs';
 import { handleSettings } from '../lib/settings.mjs';
+import { uploadImage } from '../lib/images.mjs';
 
 export function createHandler(dependencies = {}) {
   return async (req, res) => {
@@ -21,7 +22,7 @@ export function createHandler(dependencies = {}) {
       if (req.method !== 'POST') throw new EditorError(405, '请使用编辑器进行操作。');
       if (!req.headers['content-type']?.startsWith('application/json')) throw new EditorError(415, '仅支持 JSON 请求。');
       const input = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      if (!input || typeof input !== 'object' || Array.isArray(input) || Buffer.byteLength(JSON.stringify(input)) > 550000) throw new EditorError(400, '请求内容不合法或过大。');
+      if (!input || typeof input !== 'object' || Array.isArray(input) || Buffer.byteLength(JSON.stringify(input)) > (input.action === 'image.upload' ? 2900000 : 550000)) throw new EditorError(400, '请求内容不合法或过大。');
       const store = (dependencies.createStore || createStore)(config.database);
       if (input.action === 'login') {
         await store.limit('global', 60);
@@ -31,6 +32,7 @@ export function createHandler(dependencies = {}) {
       }
       authenticate(req.headers.authorization, config);
       const github = (dependencies.createGithub || createGithub)(config);
+      if (input.action === 'image.upload') return res.status(200).json(await uploadImage(input, store, github, config));
       const result = ['settings.get', 'settings.save'].includes(input.action)
         ? await handleSettings(input, store, github, config)
         : await createService(store, github, config)(input);

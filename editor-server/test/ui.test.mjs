@@ -9,7 +9,7 @@ const initialSettings = JSON.parse(await readFile(new URL('../../site-settings.j
 async function waitFor(predicate) { for (let i = 0; i < 300; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 10)); } throw Error('UI condition timed out'); }
 function setup(apiBase = '', seedLegacyEndpoint = false) {
   const messages = [], requests = [], drafts = new Map(), published = new Map(), metadata = {};
-  let expire = false, failPublish = false;
+  let expire = false, failPublish = false, failUpload = false;
   let websiteData = structuredClone(initialSettings), websiteSha = 'a'.repeat(40);
   const vc = new VirtualConsole(); vc.on('jsdomError', error => messages.push(error.message));
   const dom = new JSDOM(html, { url: 'https://example.com/editor/', runScripts: 'outside-only', virtualConsole: vc });
@@ -24,6 +24,7 @@ function setup(apiBase = '', seedLegacyEndpoint = false) {
     let status = 200, result;
     if (input.action === 'login') result = { token: 'test-owner-token' };
     else if (expire || options.headers.Authorization !== 'Bearer test-owner-token') { status = 401; result = { error: '登录过期' }; }
+    else if (input.action === 'image.upload') { status = failUpload ? 502 : 200; result = failUpload ? { error: '图片上传失败，请重试' } : { url: 'https://raw.githubusercontent.com/owner/blog/main/source/img/uploads/test.png', public: true }; }
     else if (input.action === 'settings.get') result = { settings: structuredClone(websiteData), sha: websiteSha };
     else if (input.action === 'settings.save') { websiteData = structuredClone(input.settings); websiteSha = 'b'.repeat(40); result = { settings: structuredClone(websiteData), sha: websiteSha, submitted: true, actionsUrl: 'https://github.com/owner/blog/actions' }; }
     else if (input.action === 'list') {
@@ -54,8 +55,29 @@ function setup(apiBase = '', seedLegacyEndpoint = false) {
   const confirm = async () => { await waitFor(() => $('#confirm-dialog').open); $('#confirm-dialog').close('confirm'); };
   const idle = () => waitFor(() => !w.document.body.classList.contains('busy'));
   const login = async () => { await waitFor(() => !$('#login-button').disabled); type('#password', 'test-password'); $('#login-form').dispatchEvent(new w.Event('submit', { cancelable: true })); await waitFor(() => !$('#workspace').hidden); await idle(); };
-  return { dom, w, $, click, type, confirm, idle, login, requests, drafts, published, metadata, messages, expire() { expire = true; }, recover() { expire = false; }, failPublish() { failPublish = true; } };
+  return { dom, w, $, click, type, confirm, idle, login, requests, drafts, published, metadata, messages, expire() { expire = true; }, recover() { expire = false; }, failPublish() { failPublish = true; }, failUpload() { failUpload = true; } };
 }
+test('pasted images upload at the cursor and failed uploads preserve article text', async () => {
+  const f = setup(); try {
+    await f.login(); f.click('#new-post'); await f.idle();
+    const textarea = f.$('#markdown'), original = textarea.value;
+    textarea.setSelectionRange(original.length, original.length);
+    function paste() {
+      const event = new f.w.Event('paste', { cancelable: true });
+      const file = new f.w.File(['test'], '截图.png', { type: 'image/png' });
+      Object.defineProperty(event, 'clipboardData', { value: { items: [{ kind: 'file', getAsFile: () => file }] } });
+      textarea.dispatchEvent(event); assert.equal(event.defaultPrevented, true);
+    }
+    paste(); await f.idle();
+    assert.equal(textarea.value, original + '\n![截图](https://raw.githubusercontent.com/owner/blog/main/source/img/uploads/test.png)\n');
+    assert.equal(f.requests.filter(r => r.input.action === 'image.upload').length, 1);
+    assert.equal(textarea.readOnly, false);
+    const saved = textarea.value; f.failUpload(); paste(); await f.idle();
+    assert.equal(textarea.value, saved); assert.equal(textarea.readOnly, false);
+    assert.match(f.$('#toast').textContent, /图片上传失败/);
+    assert.deepEqual(f.messages, []);
+  } finally { f.dom.window.close(); }
+});
 test('offline experience shows explicit limits, template, safe preview and mobile tabs', async () => {
   const f = setup(); try {
     assert.equal(f.$('#connection-details'), null);

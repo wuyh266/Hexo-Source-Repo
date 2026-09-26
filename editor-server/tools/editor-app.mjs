@@ -1,5 +1,6 @@
 import { readMarkdown, renderPreview, newTemplate } from './preview.mjs';
 import { mountSettings } from './settings-app.mjs';
+import { mountImageUpload } from './image-upload.mjs';
 import { connectPreviewScroll } from './preview-scroll.mjs';
 import { compareArticlesNewestFirst } from '../lib/article-order.mjs';
 
@@ -205,6 +206,7 @@ $('#focus-toggle').addEventListener('click', () => { const on = document.body.cl
 $('#show-write').addEventListener('click', () => { $('#writing-desk').classList.remove('preview-only'); $('#show-write').classList.add('active'); $('#show-preview').classList.remove('active'); });
 $('#show-preview').addEventListener('click', () => { $('#writing-desk').classList.add('preview-only'); $('#show-preview').classList.add('active'); $('#show-write').classList.remove('active'); updatePreview(); });
 const inserts = { heading: ['\n## ', '', '小节标题'], bold: ['**', '**', '重点内容'], italic: ['*', '*', '强调内容'], code: ['\n```cpp\n', '\n```\n', '// 代码'], link: ['[', '](https://example.com)', '链接文字'], image: ['![', '](https://example.com/image.jpg)', '图片说明'], list: ['\n- ', '', '列表内容'] };
+mountImageUpload({ textarea: $('#markdown'), request, run, changed, notify, available: () => !!state.token && !state.offline && !!state.current, busy: () => state.busy, currentId: () => state.current?.id });
 document.querySelectorAll('[data-insert]').forEach(button => button.addEventListener('click', () => {
   const textarea = $('#markdown'), [prefix, suffix, placeholder] = inserts[button.dataset.insert]; const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || placeholder;
   textarea.setRangeText(prefix + selected + suffix, textarea.selectionStart, textarea.selectionEnd, 'end'); textarea.focus(); changed();
