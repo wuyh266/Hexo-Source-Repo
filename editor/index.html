@@ -8,8 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://blog-editor-pied.vercel.app; frame-src 'self' about:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>写作间 · Decwoveh的学习周记</title>
   <link rel="icon" href="/img/favicon.png">
-  <link rel="stylesheet" href="/editor/editor.css">
-  <script type="module" src="/editor/app.js?v=fixed-origin-1"></script>
+  <link rel="stylesheet" href="/editor/editor.css?v=website-settings-1">
+  <script type="module" src="/editor/app.js?v=website-settings-1"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -37,12 +37,13 @@
     <aside class="sidebar">
       <a class="brand" href="/"><span class="brand-mark">D<span>·</span></span><span>Decwoveh<small>我的写作间</small></span></a>
       <p class="sidebar-label">WORKSPACE</p>
+      <button id="website-settings" class="nav-item"><span>⚙ &nbsp; 网站设置</span></button>
       <nav aria-label="文章筛选"><button class="nav-item active" data-filter="all"><span>▤ &nbsp; 全部文章</span><span id="count-all">0</span></button><button class="nav-item" data-filter="draft"><span>✎ &nbsp; 草稿箱</span><span id="count-draft">0</span></button><button class="nav-item" data-filter="published"><span>↗ &nbsp; 已发布</span><span id="count-published">0</span></button></nav>
       <div class="sidebar-note"><span class="eyebrow">ONE STEP AT A TIME</span><p>慢慢写，<br>每一篇都有意义。</p><span class="fine-line"></span></div>
       <div class="sidebar-bottom"><a href="/" target="_blank" rel="noopener">↗ 访问博客</a><button id="logout" class="text-button">退出写作间</button><div class="profile"><img src="/img/touxiang.png" alt=""><span>Decwoveh<small>学习，永不止步</small></span><span class="online-dot" aria-hidden="true"></span></div></div>
     </aside>
     <main id="main" class="main">
-      <header class="topbar"><div class="breadcrumb">学习周记 <span>/</span> <strong id="page-label">文章管理</strong></div><span id="connection-status" class="connection-status">尚未连接</span><button id="mobile-logout" class="text-button">退出</button></header>
+      <header class="topbar"><div class="breadcrumb">学习周记 <span>/</span> <strong id="page-label">文章管理</strong></div><span id="connection-status" class="connection-status">尚未连接</span><button id="mobile-settings" class="text-button">网站设置</button><button id="mobile-logout" class="text-button">退出</button></header>
       <div id="offline-notice" class="notice" hidden>离线试写模式：内容只在当前页面内存中，刷新即丢失。请用「导出 Markdown」保存；登录后才能云端保存和发布。</div>
       <div id="publish-notice" class="notice success" hidden role="status"></div>
       <section id="library-view" class="library">
