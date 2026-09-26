@@ -217,37 +217,6 @@
     
     
     <entry>
-      <title>删除子数组的最大得分：无重复元素的窗口和</title>
-      <link href="/posts/6d5b4267.html"/>
-      <url>/posts/6d5b4267.html</url>
-      
-        <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你一个正整数数组 <code>nums</code>，请从中删除一个含有若干不同元素的子数组。删除子数组的得分就是子数组各元素之和。</p><p>返回只删除一个子数组可获得的最大得分。</p><p>如果数组 <code>b</code> 是数组 <code>a</code> 的一个连续子序列，即它等于 <code>a[l], a[l+1], ..., a[r]</code>，那么它就是 <code>a</code> 的一个子数组。</p><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><strong>示例 1</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [4,2,4,5,6]</span><br><span class="line">输出：17</span><br></pre></td></tr></table></figure><p>解释：最优子数组是 <code>[2,4,5,6]</code>。</p><p><strong>示例 2</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [5,2,1,2,5,2,1,2,5]</span><br><span class="line">输出：8</span><br></pre></td></tr></table></figure><p>解释：最优子数组是 <code>[5,2,1]</code> 或 <code>[1,2,5]</code>。</p><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题直接见题解，和之前的一样。维护没有重复元素的窗口，同时维护窗口内元素之和，记录最大的和。</p><span id="more"></span><h2 id="C-题解"><a href="#C-题解" class="headerlink" title="C++ 题解"></a>C++ 题解</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">maximumUniqueSubarray</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        unordered_map&lt;<span class="type">int</span>,<span class="type">int</span>&gt;arr;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> res=<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;nums.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            arr[nums[i]]++;</span><br><span class="line">            res=res+nums[i];</span><br><span class="line">            <span class="keyword">while</span>(arr[nums[i]]&gt;=<span class="number">2</span>)&#123;</span><br><span class="line">                arr[nums[left]]--;</span><br><span class="line">                <span class="keyword">if</span>(arr[nums[left]]==<span class="number">0</span>)&#123;</span><br><span class="line">                    arr.<span class="built_in">erase</span>(nums[left]);</span><br><span class="line">                &#125;</span><br><span class="line">                res=res-nums[left];</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans=<span class="built_in">max</span>(ans,res);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> 算法学习 </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> C++ </tag>
-            
-            <tag> 滑动窗口 </tag>
-            
-            <tag> 不定长滑动窗口 </tag>
-            
-            <tag> 哈希表 </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>使数组平衡的最少移除数：排序与逆向思维</title>
       <link href="/posts/a0e8d0ca.html"/>
       <url>/posts/a0e8d0ca.html</url>
@@ -273,6 +242,37 @@
             <tag> 逆向思维 </tag>
             
             <tag> 排序 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>删除子数组的最大得分：无重复元素的窗口和</title>
+      <link href="/posts/6d5b4267.html"/>
+      <url>/posts/6d5b4267.html</url>
+      
+        <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你一个正整数数组 <code>nums</code>，请从中删除一个含有若干不同元素的子数组。删除子数组的得分就是子数组各元素之和。</p><p>返回只删除一个子数组可获得的最大得分。</p><p>如果数组 <code>b</code> 是数组 <code>a</code> 的一个连续子序列，即它等于 <code>a[l], a[l+1], ..., a[r]</code>，那么它就是 <code>a</code> 的一个子数组。</p><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><strong>示例 1</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [4,2,4,5,6]</span><br><span class="line">输出：17</span><br></pre></td></tr></table></figure><p>解释：最优子数组是 <code>[2,4,5,6]</code>。</p><p><strong>示例 2</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [5,2,1,2,5,2,1,2,5]</span><br><span class="line">输出：8</span><br></pre></td></tr></table></figure><p>解释：最优子数组是 <code>[5,2,1]</code> 或 <code>[1,2,5]</code>。</p><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题直接见题解，和之前的一样。维护没有重复元素的窗口，同时维护窗口内元素之和，记录最大的和。</p><span id="more"></span><h2 id="C-题解"><a href="#C-题解" class="headerlink" title="C++ 题解"></a>C++ 题解</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">maximumUniqueSubarray</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        unordered_map&lt;<span class="type">int</span>,<span class="type">int</span>&gt;arr;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> res=<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;nums.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            arr[nums[i]]++;</span><br><span class="line">            res=res+nums[i];</span><br><span class="line">            <span class="keyword">while</span>(arr[nums[i]]&gt;=<span class="number">2</span>)&#123;</span><br><span class="line">                arr[nums[left]]--;</span><br><span class="line">                <span class="keyword">if</span>(arr[nums[left]]==<span class="number">0</span>)&#123;</span><br><span class="line">                    arr.<span class="built_in">erase</span>(nums[left]);</span><br><span class="line">                &#125;</span><br><span class="line">                res=res-nums[left];</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans=<span class="built_in">max</span>(ans,res);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 算法学习 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> C++ </tag>
+            
+            <tag> 滑动窗口 </tag>
+            
+            <tag> 不定长滑动窗口 </tag>
+            
+            <tag> 哈希表 </tag>
             
         </tags>
       

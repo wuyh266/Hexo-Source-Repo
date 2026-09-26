@@ -21,7 +21,7 @@ workbox.core.skipWaiting();
 workbox.core.clientsClaim();
 
 // 预缓存资源（由 Workbox 自动生成的清单）
-workbox.precaching.precacheAndRoute([{"revision":"724fce4f60f2db1a1e67cca0504291a6","url":"./index.html"},{"revision":"4c11ba828ea62466a7062baa8a4b43ad","url":"./js/main.js"},{"revision":"62fde016dca3ca097f1c2ed27de89126","url":"./css/index.css"}], {
+workbox.precaching.precacheAndRoute([{"revision":"40b687b3ba568fd892c237137d041b89","url":"./index.html"},{"revision":"4c11ba828ea62466a7062baa8a4b43ad","url":"./js/main.js"},{"revision":"62fde016dca3ca097f1c2ed27de89126","url":"./css/index.css"}], {
   directoryIndex: null,
 });
 
@@ -52,6 +52,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // 忽略非 GET 请求（如 POST/PUT 等，避免缓存非幂等请求）
   if (event.request.method !== 'GET') return;
+
+  // Never cache private editing traffic or third-party API responses.
+  const requestURL = new URL(event.request.url);
+  if (requestURL.origin !== self.location.origin ||
+      requestURL.pathname.startsWith('/editor') ||
+      event.request.headers.has('Authorization')) return;
 
   // 自定义缓存策略：优先缓存，无缓存则请求网络
   event.respondWith(
