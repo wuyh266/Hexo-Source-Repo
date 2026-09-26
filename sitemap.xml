@@ -56,6 +56,15 @@
   </url>
   
   <url>
+    <loc>https://542501.xyz/posts/8021a6035a1c4e9bb279f09bcb3be30a.html</loc>
+    
+    <lastmod>2026-09-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://542501.xyz/posts/5c8a662e.html</loc>
     
     <lastmod>2026-09-25</lastmod>
@@ -101,7 +110,7 @@
   </url>
   
   <url>
-    <loc>https://542501.xyz/posts/53dbc00f.html</loc>
+    <loc>https://542501.xyz/posts/cae8b787.html</loc>
     
     <lastmod>2026-09-25</lastmod>
     
@@ -110,7 +119,7 @@
   </url>
   
   <url>
-    <loc>https://542501.xyz/posts/cae8b787.html</loc>
+    <loc>https://542501.xyz/posts/53dbc00f.html</loc>
     
     <lastmod>2026-09-25</lastmod>
     
@@ -197,6 +206,13 @@
   </url>
   
   <url>
+    <loc>https://542501.xyz/tags/%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/</loc>
+    <lastmod>2026-09-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://542501.xyz/tags/%E6%8E%92%E5%BA%8F/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
@@ -228,6 +244,13 @@
   
   <url>
     <loc>https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/</loc>
+    <lastmod>2026-09-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
