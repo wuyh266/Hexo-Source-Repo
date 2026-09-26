@@ -1,0 +1,82 @@
+---
+title: 状态机DP无冷却期股票问题II
+date: 2026-09-26 15:57:27
+categories:
+  - 算法学习
+tags:
+  - C++
+  - 状态机DP
+  - 递归
+abbrlink: e724b7a3f07b4ddc8a584abf0de23a1c
+description: 无冷却期状态机DP问题经典案例（leetcode 122）
+layout: post
+updated: 2026-09-26T11:33:55.154Z
+---
+
+## 题目
+
+给你一个整数数组 prices ，其中 prices[i] 表示某支股票第 i 天的价格。
+
+在每一天，你可以决定是否购买和/或出售股票。你在任何时候 最多 只能持有 一股 股票。然而，你可以在 同一天 多次买卖该股票，但要确保你持有的股票不超过一股。
+
+返回 你能获得的 最大 利润 。
+
+### 示例
+
+```text
+输入：prices = [7,1,5,3,6,4]
+输出：7
+解释：在第 2 天（股票价格 = 1）的时候买入，在第 3 天（股票价格 = 5）的时候卖出, 这笔交易所能获得利润 = 5 - 1 = 4。
+随后，在第 4 天（股票价格 = 3）的时候买入，在第 5 天（股票价格 = 6）的时候卖出, 这笔交易所能获得利润 = 6 - 3 = 3。
+最大总利润为 4 + 3 = 7 。
+```
+
+## 解题思路
+
+这是一个状态DP的题目，这个题包含了四种不同情况，我们先假定1是持有股票，0是不持有股票，那么第i天的总利润实际上的公式可以写成：dfs[i]=dfs[i-1]+prices[i]，这里就包含了四种情况，1.第i天我本身没有股票，要购入股票，那么这个时候实际上是-prices[i]，持有状态从1变成0，2.第i天我本身持有股票，我现在要卖出股票，那么这个时候实际上是+princes[i]，持有状态从0变成1，3.我本身没有股票，但是我什么也没做，持有状态还是保持1，4.我本身有股票，但是我什么也不做，持有状态还是保持0。这个时候我就可以写出一个递推方程了,这里还要注意最初状态不能持有股票。这里还有个小问题，就是递归会超时，所以使用了一个记忆数组来保存状态。
+
+`vector<array<int,2>>memo;` 这里的 `assign(prices.size(),array<int,2>{INT_MIN,INT_MIN});` 是vector的函数，表示用n个array填充这个vector
+
+## 代码实现
+
+```cpp
+class Solution {
+private:
+    vector<array<int,2>>memo;
+public:
+    int dfs(int i,bool hold,vector<int>&prices){
+        
+        int ans;
+        if (i<0&&hold==0){
+            return 0;
+        }
+        if (i<0&&hold==1){
+            return INT_MIN;
+        }
+        if(memo[i][hold]!=INT_MIN){
+            return memo[i][hold];
+        }
+        if(hold==0){
+            ans=max(dfs(i-1,0,prices),dfs(i-1,1,prices)+prices[i]);
+        }else{
+            ans=max(dfs(i-1,1,prices),dfs(i-1,0,prices)-prices[i]);
+        }
+        memo[i][hold]=ans;
+        return ans;
+    }
+    int maxProfit(vector<int>& prices) {
+        memo.assign(prices.size(),array<int,2>{INT_MIN,INT_MIN});
+        int ans=dfs(prices.size()-1,0,prices);
+        return ans;
+    }
+};
+```
+
+## 复杂度分析
+
+- 时间复杂度：O(n)
+- 空间复杂度：O(n)
+
+## 易错点
+
+- 要先把买入卖出之间的状态转换搞清楚，搞清楚之后再进行效率的提高就行
