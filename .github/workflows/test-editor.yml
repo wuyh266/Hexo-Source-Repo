@@ -2,9 +2,9 @@ name: Test article editor
 on:
   push:
     branches: [main]
-    paths: ['editor-server/**', 'source/editor/**', '.github/workflows/test-editor.yml']
+    paths: ['editor-server/**', 'source/editor/**', 'site-settings.json', 'scripts/site-settings.js', '.github/workflows/test-editor.yml']
   pull_request:
-    paths: ['editor-server/**', 'source/editor/**', '.github/workflows/test-editor.yml']
+    paths: ['editor-server/**', 'source/editor/**', 'site-settings.json', 'scripts/site-settings.js', '.github/workflows/test-editor.yml']
 permissions:
   contents: read
 jobs:

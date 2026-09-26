@@ -3,6 +3,7 @@ import { EditorError } from '../lib/content.mjs';
 import { createStore } from '../lib/store.mjs';
 import { createGithub } from '../lib/github.mjs';
 import { createService } from '../lib/service.mjs';
+import { handleSettings } from '../lib/settings.mjs';
 
 export function createHandler(dependencies = {}) {
   return async (req, res) => {
@@ -30,7 +31,9 @@ export function createHandler(dependencies = {}) {
       }
       authenticate(req.headers.authorization, config);
       const github = (dependencies.createGithub || createGithub)(config);
-      const result = await createService(store, github, config)(input);
+      const result = ['settings.get', 'settings.save'].includes(input.action)
+        ? await handleSettings(input, store, github, config)
+        : await createService(store, github, config)(input);
       return res.status(200).json(result);
     } catch (error) {
       const status = error instanceof EditorError ? error.status : error instanceof SyntaxError ? 400 : 503;

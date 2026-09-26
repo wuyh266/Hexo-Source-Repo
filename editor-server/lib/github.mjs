@@ -1,8 +1,9 @@
 import { assertId, EditorError } from './content.mjs';
 export function createGithub(config, fetcher = fetch) {
   const root = `https://api.github.com/repos/${config.repository}/contents/source/_posts`;
-  async function request(id, method = 'GET', data) {
-    const url = root + (id ? `/${encodeURIComponent(assertId(id))}` : '') + (method === 'GET' ? `?ref=${encodeURIComponent(config.branch)}` : '');
+  async function request(id, method = 'GET', data, settingsFile = false) {
+    const target = settingsFile ? `https://api.github.com/repos/${config.repository}/contents/site-settings.json` : root + (id ? `/${encodeURIComponent(assertId(id))}` : '');
+    const url = target + (method === 'GET' ? `?ref=${encodeURIComponent(config.branch)}` : '');
     const response = await fetcher(url, { method, signal: AbortSignal.timeout(15000), headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${config.githubToken}`, 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json', 'User-Agent': 'Decwoveh-Editor' }, ...(data ? { body: JSON.stringify({ ...data, branch: config.branch }) } : {}) });
     if (response.status === 404 && method === 'GET' && id) return null;
     if ([409, 422].includes(response.status)) throw new EditorError(409, '仓库内容发生变化，请导出当前内容并重新打开文章后重试。');
@@ -10,6 +11,16 @@ export function createGithub(config, fetcher = fetch) {
     return response.json();
   }
   return {
+    async getSettings() {
+      const file = await request('site-settings.json', 'GET', undefined, true);
+      if (!file) return null;
+      if (file.type !== 'file' || file.encoding !== 'base64' || file.size > 30000 || file.target || file.submodule_git_url) throw new EditorError(400, '网站设置文件无效。');
+      return { sha: file.sha, content: Buffer.from(file.content, 'base64').toString('utf8') };
+    },
+    async putSettings(content, sha) {
+      const data = await request('site-settings.json', 'PUT', { message: 'site: update website settings', content: Buffer.from(content).toString('base64'), sha }, true);
+      return { sha: data.content.sha, commit: data.commit.sha };
+    },
     async list() {
       const files = await request('');
       if (!Array.isArray(files) || files.length >= 1000) throw new EditorError(502, '文章目录超过当前编辑器支持的 999 个文件，请联系维护者。');

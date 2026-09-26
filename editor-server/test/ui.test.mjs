@@ -5,10 +5,12 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 
 const html = await readFile(new URL('../../source/editor/index.html', import.meta.url), 'utf8');
 const bundle = await readFile(new URL('../../source/editor/app.js', import.meta.url), 'utf8');
+const initialSettings = JSON.parse(await readFile(new URL('../../site-settings.json', import.meta.url), 'utf8'));
 async function waitFor(predicate) { for (let i = 0; i < 300; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 10)); } throw Error('UI condition timed out'); }
 function setup(apiBase = '', seedLegacyEndpoint = false) {
   const messages = [], requests = [], drafts = new Map(), published = new Map();
   let expire = false, failPublish = false;
+  let websiteData = structuredClone(initialSettings), websiteSha = 'a'.repeat(40);
   const vc = new VirtualConsole(); vc.on('jsdomError', error => messages.push(error.message));
   const dom = new JSDOM(html, { url: 'https://example.com/editor/', runScripts: 'outside-only', virtualConsole: vc });
   const w = dom.window, $ = selector => w.document.querySelector(selector);
@@ -22,6 +24,8 @@ function setup(apiBase = '', seedLegacyEndpoint = false) {
     let status = 200, result;
     if (input.action === 'login') result = { token: 'test-owner-token' };
     else if (expire || options.headers.Authorization !== 'Bearer test-owner-token') { status = 401; result = { error: '登录过期' }; }
+    else if (input.action === 'settings.get') result = { settings: structuredClone(websiteData), sha: websiteSha };
+    else if (input.action === 'settings.save') { websiteData = structuredClone(input.settings); websiteSha = 'b'.repeat(40); result = { settings: structuredClone(websiteData), sha: websiteSha, submitted: true, actionsUrl: 'https://github.com/owner/blog/actions' }; }
     else if (input.action === 'list') {
       const all = new Map([...published].map(([id, p]) => [id, { id, title: id, status: 'published', version: 0, sha: p.sha }]));
       for (const [id, draft] of drafts) all.set(id, { id, title: '新的学习手记', status: published.has(id) ? 'changed' : 'draft', version: draft.version });
@@ -105,5 +109,38 @@ test('credentials use only fixed production origin despite legacy storage, confi
     const policy = f.$('meta[http-equiv="Content-Security-Policy"]').content;
     assert.equal(policy.split(';').map(v => v.trim()).find(v => v.startsWith('connect-src ')), "connect-src 'self' https://blog-editor-pied.vercel.app");
     assert.deepEqual(f.messages, []);
+  } finally { f.dom.window.close(); }
+});
+test('website settings edit, preview, publish, reload and navigate back to articles', async () => {
+  const f = setup(); try {
+    await f.login(); f.click('#website-settings'); await f.idle();
+    assert.equal(f.$('#settings-view').hidden, false);
+    assert.equal(f.$('#library-view').hidden, true);
+    f.type('[name=announcement]', '新的公告\n欢迎交流');
+    f.type('[name=title]', '新名称');
+    assert.equal(f.$('#settings-preview-announcement-text').textContent, '新的公告\n欢迎交流');
+    assert.match(f.$('#settings-status').textContent, /未发布/);
+    f.$('#settings-form').dispatchEvent(new f.w.Event('submit', { cancelable: true })); await f.idle();
+    assert.equal(f.requests.find(r => r.input.action === 'settings.save').input.settings.title, '新名称');
+    assert.equal(f.$('#publish-notice').hidden, false);
+    f.click('[data-filter=all]'); await f.idle(); assert.equal(f.$('#settings-view').hidden, true);
+    f.click('#mobile-settings'); await f.idle(); assert.equal(f.$('[name=announcement]').value, '新的公告\n欢迎交流');
+    f.type('[name=description]', '尚未保存');
+    f.click('[data-filter=all]'); await f.confirm(); await f.idle();
+    assert.equal(f.$('#library-view').hidden, false); assert.equal(f.$('#settings-view').hidden, true);
+    assert.deepEqual(f.messages, []);
+  } finally { f.dom.window.close(); }
+});
+test('settings survive session expiry and are unavailable in offline mode', async () => {
+  const f = setup(); try {
+    f.click('#offline-button'); await waitFor(() => !f.$('#workspace').hidden);
+    f.click('#website-settings'); await f.idle(); assert.equal(f.$('#settings-view').hidden, true);
+    f.click('#logout'); await waitFor(() => !f.$('#login-view').hidden);
+    await f.login(); f.click('#website-settings'); await f.idle(); f.type('[name=announcement]', '过期也保留');
+    f.expire(); f.$('#settings-form').dispatchEvent(new f.w.Event('submit', { cancelable: true })); await f.idle();
+    assert.equal(f.$('#login-view').hidden, false);
+    f.recover(); await f.login(); assert.equal(f.$('[name=announcement]').value, '过期也保留');
+    f.$('#settings-form').dispatchEvent(new f.w.Event('submit', { cancelable: true })); await f.idle();
+    assert.equal(f.$('#settings-status').textContent, '设置已保存');
   } finally { f.dom.window.close(); }
 });

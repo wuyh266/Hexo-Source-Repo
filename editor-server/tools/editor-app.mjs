@@ -1,4 +1,5 @@
 import { readMarkdown, renderPreview, newTemplate } from './preview.mjs';
+import { mountSettings } from './settings-app.mjs';
 
 const $ = selector => document.querySelector(selector);
 // The credential destination is fixed at build time, never read from browser storage or URL parameters.
@@ -31,7 +32,7 @@ async function request(action, data = {}) {
 async function run(work) {
   if (state.busy) return;
   state.busy = true; document.body.classList.add('busy');
-  const controls = [...document.querySelectorAll('#save-post,#publish-post,#delete-post,#discard-post,#new-post,#refresh-list,#back-library,#apply-template,#logout,#mobile-logout,#login-button')];
+  const controls = [...document.querySelectorAll('#save-post,#publish-post,#delete-post,#discard-post,#new-post,#refresh-list,#back-library,#apply-template,#logout,#mobile-logout,#login-button,#website-settings,#mobile-settings,#settings-save,#settings-reload')];
   controls.forEach(button => { button.dataset.wasDisabled = String(button.disabled); button.disabled = true; });
   try { await work(); } catch (error) { notify(error.message, true); }
   finally { state.busy = false; document.body.classList.remove('busy'); controls.forEach(button => { button.disabled = button.dataset.wasDisabled === 'true'; }); $('#apply-template').disabled = !!state.current?.publishedSha; updateStatus(); }
@@ -101,9 +102,10 @@ async function refreshLibrary() {
   renderList();
 }
 async function canLeave() {
-  return !dirty() || await confirmAction('离开当前文章？', '还有未保存的修改。请取消并保存草稿，或先导出 Markdown。直接离开会丢弃这些修改。', '丢弃修改并离开');
+  return (!dirty() && !websiteSettings.isDirty()) || await confirmAction('离开当前页面？', '还有未保存的修改。请取消并保存，或复制保留当前内容。直接离开会丢弃这些修改。', '丢弃修改并离开');
 }
 function showEditor(article) {
+  websiteSettings.hide();
   clearTimeout(saveTimer); clearTimeout(previewTimer); state.current = article; state.saved = article.content; state.revision++;
   $('#markdown').value = article.content; $('#file-label').textContent = `source/_posts/${article.id}`;
   $('#library-view').hidden = true; $('#editor-view').hidden = false; $('#page-label').textContent = '撰写手记'; $('#publish-notice').hidden = true;
@@ -135,9 +137,9 @@ $('#login-form').addEventListener('submit', event => {
     catch (error) { $('#login-error').textContent = error.message; throw error; }
   });
 });
-$('#offline-button').addEventListener('click', async () => { if (!await canLeave()) return; state.offline = true; state.token = ''; state.articles = []; state.current = null; enterWorkspace(); $('#library-view').hidden = false; $('#editor-view').hidden = true; renderList(); });
+$('#offline-button').addEventListener('click', async () => { if (!await canLeave()) return; websiteSettings.hide(); state.offline = true; state.token = ''; state.articles = []; state.current = null; enterWorkspace(); $('#library-view').hidden = false; $('#editor-view').hidden = true; renderList(); });
 async function logout() {
-  if (!await canLeave()) return; clearTimeout(saveTimer); state.token = ''; state.current = null; state.articles = []; state.saved = ''; $('#markdown').value = ''; $('#preview').srcdoc = ''; $('#article-list').replaceChildren(); $('#login-error').textContent = ''; showLogin();
+  if (!await canLeave()) return; websiteSettings.hide(); clearTimeout(saveTimer); state.token = ''; state.current = null; state.articles = []; state.saved = ''; $('#markdown').value = ''; $('#preview').srcdoc = ''; $('#article-list').replaceChildren(); $('#login-error').textContent = ''; showLogin();
 }
 $('#logout').addEventListener('click', logout); $('#mobile-logout').addEventListener('click', logout);
 $('#new-post').addEventListener('click', () => run(async () => {
@@ -145,10 +147,11 @@ $('#new-post').addEventListener('click', () => run(async () => {
   const uuid = crypto.randomUUID(), id = `note-${uuid}.md`; showEditor({ id, content: newTemplate('study', new Date(), uuid.replaceAll('-', '')), version: 0, baseSha: null, publishedSha: null }); state.saved = ''; updateStatus();
 }));
 $('#back-library').addEventListener('click', () => run(async () => {
+  if (websiteSettings.isOpen()) { if (!await canLeave()) return; websiteSettings.hide(); }
   if (!await canLeave()) return; clearTimeout(saveTimer); state.current = null; $('#editor-view').hidden = true; $('#library-view').hidden = false; $('#page-label').textContent = '文章管理'; document.body.classList.remove('focus-mode'); $('#focus-toggle').setAttribute('aria-pressed', 'false'); await refreshLibrary();
 }));
 document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => run(async () => {
-  if (!await canLeave()) return; clearTimeout(saveTimer); state.current = null; state.filter = button.dataset.filter; $('#editor-view').hidden = true; $('#library-view').hidden = false; $('#page-label').textContent = '文章管理'; renderList();
+  if (!await canLeave()) return; websiteSettings.hide(); clearTimeout(saveTimer); state.current = null; state.filter = button.dataset.filter; $('#editor-view').hidden = true; $('#library-view').hidden = false; $('#page-label').textContent = '文章管理'; renderList();
 })));
 $('#search').addEventListener('input', renderList); $('#refresh-list').addEventListener('click', () => run(refreshLibrary));
 $('#markdown').addEventListener('input', changed);
@@ -198,8 +201,16 @@ document.querySelectorAll('[data-insert]').forEach(button => button.addEventList
   const textarea = $('#markdown'), [prefix, suffix, placeholder] = inserts[button.dataset.insert]; const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || placeholder;
   textarea.setRangeText(prefix + selected + suffix, textarea.selectionStart, textarea.selectionEnd, 'end'); textarea.focus(); changed();
 }));
-document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && state.current) { event.preventDefault(); if (!state.token || state.offline) $('#export-post').click(); else run(() => saveDraft()); } });
-window.addEventListener('beforeunload', event => { if (dirty() || (state.offline && state.current)) { event.preventDefault(); event.returnValue = ''; } });
+document.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    if (websiteSettings.isOpen() && state.token) { event.preventDefault(); $('#settings-form').requestSubmit(); }
+    else if (state.current) { event.preventDefault(); if (!state.token || state.offline) $('#export-post').click(); else run(() => saveDraft()); }
+  }
+});
+window.addEventListener('beforeunload', event => { if (dirty() || websiteSettings.isDirty() || (state.offline && state.current)) { event.preventDefault(); event.returnValue = ''; } });
+const websiteSettings = mountSettings({ request, run, canLeave, notify, isOffline: () => state.offline, showPublishNotice, onOpen: () => {
+  clearTimeout(saveTimer); state.current = null; $('#library-view').hidden = true; $('#editor-view').hidden = true; $('#publish-notice').hidden = true; $('#page-label').textContent = '网站设置'; document.body.classList.remove('focus-mode');
+} });
 // Remove only the obsolete address preference; passwords, tokens and articles are never stored here.
 try { localStorage.removeItem('decwoveh-editor-endpoint'); } catch {}
 $('#login-button').disabled = false;
