@@ -68,11 +68,11 @@ Vercel → Add New → Project → 导入 `wuyh266/Hexo-Source-Repo`。
 
 部署后使用稳定的 Production 域名，不使用单次部署的临时域名。生产 API 需要能被博客跨域调用；如果 Vercel 的 Deployment Protection 拦截了生产域名，请仅针对这个独立后台按需调整访问保护，并保留应用本身的作者密码、来源校验和限流。不要关闭其他项目的保护。
 
-### 4. 在写作间连接后台
+### 4. 在写作间登录
 
-打开博客 `/editor/` →「首次使用 / 连接编辑服务」→ 填写新后台地址，例如 `https://你的编辑项目.vercel.app` → 确认这是你自己部署的地址 → 输入独立作者密码。
+打开博客 `/editor/`，输入独立作者密码。正式后台固定为 `https://blog-editor-pied.vercel.app`，登录页不再提供修改后台地址的入口。
 
-这一步只在当前浏览器保存**不含密钥的后台网址**。如果希望换设备不用重填，可以在 `source/editor/config.json` 的 `apiBase` 填入同一个公开网址并重新发布博客。不要填写评论项目 `myblog-umber-chi.vercel.app`。
+凭证请求地址固定在 `tools/editor-app.mjs` 的 `EDITOR_API` 常量中，并由 `source/editor/index.html` 的 CSP 限制连接目标。浏览器旧地址偏好会被清除，URL 参数和 `config.json` 不参与后台地址选择，请求不跟随重定向。以后迁移后台时，需要同步修改常量和 CSP，重新编译并发布前端。
 
 ### 5. 做一次上线验收
 
@@ -101,7 +101,7 @@ Vercel → Add New → Project → 导入 `wuyh266/Hexo-Source-Repo`。
 
 博客仍按原来的方式启动：`npm run server`，打开 `http://localhost:4000/editor/`。不配置后台也可以点「离线试写」。
 
-后台调试需要 Node 22：在 `editor-server` 目录 `npm ci`，复制 `.env.example` 为被忽略的 `.env` 并自行填入密钥。在 `ALLOWED_ORIGINS` 里额外加入 `http://localhost:4000`（逗号分隔）；运行 `npm run dev`，服务只监听 `127.0.0.1:4318`。编辑器连接地址填 `http://localhost:4318`。
+后台调试需要 Node 22：在 `editor-server` 目录 `npm ci`，复制 `.env.example` 为被忽略的 `.env` 并自行填入密钥。在 `ALLOWED_ORIGINS` 里额外加入 `http://localhost:4000`（逗号分隔）；运行 `npm run dev`，服务只监听 `127.0.0.1:4318`。如需联调，应在独立的本地开发副本中同步修改 `EDITOR_API` 和 CSP 并重新编译；不要将 localhost 配置发布到正式网站。
 
 修改编辑器逻辑后：`npm run build:editor` 会将 `tools/editor-app.mjs`、`tools/preview.mjs` 与固定依赖编译为 `source/editor/app.js`。HTML 和 CSS 在 `source/editor/`。不需外部 CDN，许可证在 `app.js.LEGAL.txt`。
 

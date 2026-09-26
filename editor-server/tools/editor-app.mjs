@@ -1,7 +1,9 @@
 import { readMarkdown, renderPreview, newTemplate } from './preview.mjs';
 
 const $ = selector => document.querySelector(selector);
-const state = { token: '', api: '', offline: false, articles: [], current: null, saved: '', filter: 'all', busy: false, revision: 0 };
+// The credential destination is fixed at build time, never read from browser storage or URL parameters.
+const EDITOR_API = 'https://blog-editor-pied.vercel.app';
+const state = { token: '', offline: false, articles: [], current: null, saved: '', filter: 'all', busy: false, revision: 0 };
 let previewTimer, saveTimer, toastTimer;
 const labels = { draft: '草稿', published: '已发布', changed: '有未发布修改' };
 const dirty = () => state.current && $('#markdown').value !== state.saved;
@@ -14,23 +16,9 @@ function confirmAction(title, message, label = '确认') {
   $('#confirm-title').textContent = title; $('#confirm-description').textContent = message; $('#confirm-yes').textContent = label;
   return new Promise(resolve => { dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true }); dialog.showModal(); });
 }
-function normalizeEndpoint(value) {
-  const url = new URL(value.trim());
-  const local = ['localhost', '127.0.0.1'].includes(url.hostname);
-  if (url.username || url.password || url.search || url.hash || (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) throw new Error('请填写 HTTPS 后台地址，本地调试可使用 localhost。');
-  if (!['/', '/api/editor', '/api/editor/'].includes(url.pathname)) throw new Error('请填写后台根地址，不需要添加其他路径。');
-  return url.origin;
-}
-function connectionHint() {
-  $('#endpoint').value = state.api;
-  $('#endpoint-hint').textContent = state.api ? `密码将发送到：${new URL(state.api).host}` : '尚未连接云端编辑服务。请先展开下方「连接编辑服务」。';
-  $('#login-button').disabled = !state.api;
-  if (!state.api) $('#connection-details').open = true;
-}
 async function request(action, data = {}) {
-  if (!state.api) throw new Error('请先配置编辑服务网址。');
   let response;
-  try { response = await fetch(`${state.api}/api/editor`, { method: 'POST', cache: 'no-store', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) }, body: JSON.stringify({ action, ...data }), signal: AbortSignal.timeout(65000) }); }
+  try { response = await fetch(`${EDITOR_API}/api/editor`, { method: 'POST', redirect: 'error', cache: 'no-store', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}) }, body: JSON.stringify({ action, ...data }), signal: AbortSignal.timeout(65000) }); }
   catch { throw new Error('连接失败或响应超时。内容仍留在编辑页；可先导出备份。发布超时请先核对 GitHub 构建再重试。'); }
   let result;
   try { result = await response.json(); } catch { throw new Error('后台未返回有效数据，请检查网址及 Vercel 部署访问保护设置。'); }
@@ -77,7 +65,7 @@ function showLogin(preserve = false) {
 }
 function enterWorkspace() {
   $('#login-view').hidden = true; $('#workspace').hidden = false; $('#offline-notice').hidden = !state.offline;
-  $('#connection-status').textContent = state.offline ? '离线体验' : `已连接 ${new URL(state.api).host}`;
+  $('#connection-status').textContent = state.offline ? '离线体验' : '已连接写作服务';
 }
 function renderList() {
   const count = { all: state.articles.length, draft: state.articles.filter(a => a.status !== 'published').length, published: state.articles.filter(a => a.status !== 'draft').length };
@@ -140,13 +128,6 @@ function showPublishNotice(message, actionsUrl, url) {
   notice.hidden = false;
 }
 
-$('#connect-button').addEventListener('click', async () => {
-  try {
-    const endpoint = normalizeEndpoint($('#endpoint').value);
-    if (!await confirmAction('连接这个编辑服务？', `作者密码会发送到 ${endpoint}。请确认这是你自己部署的文章后台，而不是评论服务或他人的网站。`, '确认连接')) return;
-    state.api = endpoint; try { localStorage.setItem('decwoveh-editor-endpoint', endpoint); } catch {} connectionHint(); notify('连接地址已保存。尚未登录。');
-  } catch (error) { notify(error.message, true); }
-});
 $('#login-form').addEventListener('submit', event => {
   event.preventDefault(); run(async () => {
     $('#login-error').textContent = ''; const password = $('#password').value;
@@ -219,12 +200,6 @@ document.querySelectorAll('[data-insert]').forEach(button => button.addEventList
 }));
 document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && state.current) { event.preventDefault(); if (!state.token || state.offline) $('#export-post').click(); else run(() => saveDraft()); } });
 window.addEventListener('beforeunload', event => { if (dirty() || (state.offline && state.current)) { event.preventDefault(); event.returnValue = ''; } });
-// Only the non-secret API address is persisted. Tokens and article text stay in memory.
-async function initialize() { try {
-  const config = await fetch('/editor/config.json', { cache: 'no-store' }).then(response => response.json());
-  let saved = ''; try { saved = localStorage.getItem('decwoveh-editor-endpoint') || ''; } catch {}
-  const endpoint = config.apiBase || saved; state.api = endpoint ? normalizeEndpoint(endpoint) : '';
-} catch { $('#login-error').textContent = '无法读取默认配置，可手动填写编辑服务地址。'; }
-connectionHint();
-}
-initialize();
+// Remove only the obsolete address preference; passwords, tokens and articles are never stored here.
+try { localStorage.removeItem('decwoveh-editor-endpoint'); } catch {}
+$('#login-button').disabled = false;

@@ -6,7 +6,7 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 const html = await readFile(new URL('../../source/editor/index.html', import.meta.url), 'utf8');
 const bundle = await readFile(new URL('../../source/editor/app.js', import.meta.url), 'utf8');
 async function waitFor(predicate) { for (let i = 0; i < 300; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 10)); } throw Error('UI condition timed out'); }
-function setup(apiBase = '') {
+function setup(apiBase = '', seedLegacyEndpoint = false) {
   const messages = [], requests = [], drafts = new Map(), published = new Map();
   let expire = false, failPublish = false;
   const vc = new VirtualConsole(); vc.on('jsdomError', error => messages.push(error.message));
@@ -18,7 +18,7 @@ function setup(apiBase = '') {
   w.fetch = async (url, options = {}) => {
     if (url === '/editor/config.json') return { json: async () => ({ apiBase }) };
     if (url === '/editor/published.json') return { json: async () => ({}) };
-    const input = JSON.parse(options.body); requests.push({ input, options });
+    const input = JSON.parse(options.body); requests.push({ url, input, options });
     let status = 200, result;
     if (input.action === 'login') result = { token: 'test-owner-token' };
     else if (expire || options.headers.Authorization !== 'Bearer test-owner-token') { status = 401; result = { error: '登录过期' }; }
@@ -35,6 +35,11 @@ function setup(apiBase = '') {
     else if (input.action === 'discard') { drafts.delete(input.id); result = { discarded: true }; }
     return { ok: status === 200, status, json: async () => result };
   };
+  if (seedLegacyEndpoint) {
+    w.localStorage.setItem('decwoveh-editor-endpoint', 'https://attacker.example');
+    w.localStorage.setItem('unrelated-preference', 'keep');
+    w.history.replaceState(null, '', '/editor/?apiBase=https://attacker.example');
+  }
   w.eval(bundle);
   const click = selector => $(selector).click();
   const type = (selector, value) => { $(selector).value = value; $(selector).dispatchEvent(new w.Event('input', { bubbles: true })); };
@@ -45,8 +50,8 @@ function setup(apiBase = '') {
 }
 test('offline experience shows explicit limits, template, safe preview and mobile tabs', async () => {
   const f = setup(); try {
-    await waitFor(() => f.$('#connection-details').open);
-    assert.equal(f.$('#login-button').disabled, true);
+    assert.equal(f.$('#connection-details'), null);
+    assert.equal(f.$('#login-button').disabled, false);
     f.click('#offline-button'); await waitFor(() => !f.$('#workspace').hidden);
     f.click('#new-post'); await f.idle();
     assert.ok(f.$('#markdown').value.includes('categories:'));
@@ -86,5 +91,19 @@ test('failed publishing keeps recoverable draft and does not announce success', 
   const f = setup('https://editor.example.com'); try {
     await f.login(); f.click('#new-post'); await f.idle(); f.failPublish(); f.click('#publish-post'); await f.confirm(); await f.idle();
     assert.equal(f.drafts.size, 1); assert.equal(f.published.size, 0); assert.equal(f.$('#publish-notice').hidden, true); assert.match(f.$('#toast').textContent, /草稿已保留/);
+  } finally { f.dom.window.close(); }
+});
+test('credentials use only fixed production origin despite legacy storage, config or URL overrides', async () => {
+  const f = setup('https://attacker.example', true); try {
+    assert.equal(f.$('#endpoint'), null);
+    assert.equal(f.$('#connect-button'), null);
+    assert.equal(f.w.localStorage.getItem('decwoveh-editor-endpoint'), null);
+    assert.equal(f.w.localStorage.getItem('unrelated-preference'), 'keep');
+    await f.login();
+    assert.ok(f.requests.some(r => r.input.action === 'login'));
+    assert.ok(f.requests.every(r => r.url === 'https://blog-editor-pied.vercel.app/api/editor' && r.options.redirect === 'error'));
+    const policy = f.$('meta[http-equiv="Content-Security-Policy"]').content;
+    assert.equal(policy.split(';').map(v => v.trim()).find(v => v.startsWith('connect-src ')), "connect-src 'self' https://blog-editor-pied.vercel.app");
+    assert.deepEqual(f.messages, []);
   } finally { f.dom.window.close(); }
 });
