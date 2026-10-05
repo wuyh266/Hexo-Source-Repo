@@ -21,7 +21,7 @@ workbox.core.skipWaiting();
 workbox.core.clientsClaim();
 
 // 预缓存资源（由 Workbox 自动生成的清单）
-workbox.precaching.precacheAndRoute([{"revision":"353842c5b2baf0e4c6b8fc75226efd89","url":"./index.html"},{"revision":"4c11ba828ea62466a7062baa8a4b43ad","url":"./js/main.js"},{"revision":"62fde016dca3ca097f1c2ed27de89126","url":"./css/index.css"}], {
+workbox.precaching.precacheAndRoute([{"revision":"d6877810767ce4c90623a011cea7760c","url":"./index.html"},{"revision":"4c11ba828ea62466a7062baa8a4b43ad","url":"./js/main.js"},{"revision":"62fde016dca3ca097f1c2ed27de89126","url":"./css/index.css"}], {
   directoryIndex: null,
 });
 
