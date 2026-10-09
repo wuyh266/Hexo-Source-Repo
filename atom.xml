@@ -6,7 +6,7 @@
   <link href="https://542501.xyz/atom.xml" rel="self"/>
   
   <link href="https://542501.xyz/"/>
-  <updated>2026-10-09T05:49:32.287Z</updated>
+  <updated>2026-10-09T07:20:44.191Z</updated>
   <id>https://542501.xyz/</id>
   
   <author>
@@ -15,6 +15,89 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>AgentHub 开发手记（一）：用 Go 跑通 ReAct 和第一个真实工具</title>
+    <link href="https://542501.xyz/posts/5c3b148f0d174ea296854b367762bc10.html"/>
+    <id>https://542501.xyz/posts/5c3b148f0d174ea296854b367762bc10.html</id>
+    <published>2026-10-09T00:00:00.000Z</published>
+    <updated>2026-10-09T07:20:44.191Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近我在用 Go 写一个叫 AgentHub 的项目，想把 AI Agent 从概念变成自己能看懂、能运行的程序。</p><p>第一阶段的目标很具体：给程序一个自然语言任务，让模型选择工具，程序执行工具，再把结果交回模型，最后得到回答。最开始用 Echo 验证流程，接着把已有的图片处理服务接进来。</p><p>这篇记录的是 2026 年 9 月 10 日的开发过程：项目骨架、图片工具注册，以及随后对忽略规则的修正。</p><span id="more"></span><h2 id="先把模型、工具和循环分开"><a href="#先把模型、工具和循环分开" class="headerlink" title="先把模型、工具和循环分开"></a>先把模型、工具和循环分开</h2><p>项目刚开始时，我把主要代码分成了三部分：</p><div class="table-container"><table><thead><tr><th>部分</th><th>负责什么</th></tr></thead><tbody><tr><td>模型客户端</td><td>把消息发给 GLM，取回模型回复</td></tr><tr><td>工具</td><td>执行具体操作，比如回显文本、缩放图片</td></tr><tr><td>Agent 内核</td><td>维护消息历史，解析回复，选择工具并控制循环</td></tr></tbody></table></div><p>这样分的直接好处是，图片处理的细节可以留在图片工具里。Agent 内核只需要知道工具叫什么、能做什么，以及怎么调用它。</p><p>工具接口很小：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Tool <span class="keyword">interface</span> &#123;</span><br><span class="line">    Name() <span class="type">string</span></span><br><span class="line">    Description() <span class="type">string</span></span><br><span class="line">    Execute(ctx context.Context, input <span class="type">string</span>) (<span class="type">string</span>, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p><code>Name</code> 用于查找工具，<code>Description</code> 会进入提示词，<code>Execute</code> 才真正执行操作。模型根据描述提出工具调用，Go 程序根据名字查表，再调用对应的 <code>Execute</code>。</p><p>这也让我把职责想清楚了：模型输出工具名和参数之后，还需要程序完成解析、分发、执行和结果回传。</p><h2 id="ReAct-在代码里是一段有限循环"><a href="#ReAct-在代码里是一段有限循环" class="headerlink" title="ReAct 在代码里是一段有限循环"></a>ReAct 在代码里是一段有限循环</h2><p>这一版 AgentHub 使用文本协议。模型需要调用工具时，输出 <code>Action</code> 和 <code>Action Input</code>；能够回答时，输出 <code>Final Answer</code>。</p><p>例如，下面是一段用于说明协议的文本，并非某次运行日志：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Action: image_scaling</span><br><span class="line">Action Input: ./picture/window.jpg 256</span><br></pre></td></tr></table></figure><p>内核的执行顺序是：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">准备系统提示词和用户问题</span><br><span class="line">    ↓</span><br><span class="line">调用模型，把回复追加到消息历史</span><br><span class="line">    ↓</span><br><span class="line">解析回复</span><br><span class="line">    ├─ 有最终答案：返回答案</span><br><span class="line">    └─ 有工具请求：查找并执行工具</span><br><span class="line">                       ↓</span><br><span class="line">              把 Observation 追加到消息历史</span><br><span class="line">                       ↓</span><br><span class="line">                   再次调用模型</span><br></pre></td></tr></table></figure><p>这里有一个很容易忽略的地方：第二次调用模型时，要把之前的过程一起发过去。</p><p>如果只发原始问题，模型就看不到工具刚刚返回的结果。因此 <code>messages</code> 会不断追加模型回复和工具反馈，让下一轮有依据继续处理。</p><p>当前这套文本协议把工具结果作为带有 <code>Observation:</code> 前缀的 <code>user</code> 消息回传，每轮最多处理一个工具请求。它的实现比较直接，适合先跟清楚调用链；后续如果迁移到原生结构化工具调用，还需要调整协议和消息表示。</p><h2 id="从-Echo-走到真正的图片处理"><a href="#从-Echo-走到真正的图片处理" class="headerlink" title="从 Echo 走到真正的图片处理"></a>从 Echo 走到真正的图片处理</h2><p>最开始用 Echo，是因为它可以把输入原样返回。这样我能先确认工具名称分发和结果回传是否连得起来。</p><p>接下来注册 <code>image_scaling</code>，让 Agent 调用本地图片处理服务。用户传入的是这样的任务：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">把 ./picture/window.jpg 缩放到宽度 256</span><br></pre></td></tr></table></figure><p>模型需要把自然语言转换成工具接受的参数。图片工具再依次完成这些工作：</p><ol><li>拆出图片路径和目标宽度，检查字段数量及宽度范围。</li><li>根据文件扩展名检查是否为支持的 JPEG 或 PNG。</li><li>打开本地文件，把图片和宽度组装为上传请求。</li><li>请求图片服务的 <code>/resize</code> 接口。</li><li>读取返回的图片字节，保存文件并返回输出路径。</li></ol><p>这样，一次自然语言任务就和已有的 HTTP 服务连接起来了。Agent 内核仍然只调用 <code>Execute</code>，上传和保存文件的细节由工具负责。</p><h2 id="接口能接住对象，还要看对象有没有准备好"><a href="#接口能接住对象，还要看对象有没有准备好" class="headerlink" title="接口能接住对象，还要看对象有没有准备好"></a>接口能接住对象，还要看对象有没有准备好</h2><p>接图片工具时，我也碰到了 Go 里一个很实际的问题：实现了接口，并不意味着这个类型可以直接用零值运行。</p><p>Echo 本身不依赖外部配置，用 <code>Echo&#123;&#125;</code> 就能工作。图片工具需要服务地址和 HTTP 客户端，所以要通过构造函数创建：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">imageprocessing.NewImageScaling(<span class="string">&quot;http://localhost:8080/resize&quot;</span>)</span><br></pre></td></tr></table></figure><p>这里还涉及接收者类型。图片工具的方法使用指针接收者，放进工具列表的是 <code>*ImageScaling</code>；Echo 使用值接收者，可以直接放入 <code>Echo&#123;&#125;</code>。</p><p>以后再接工具，我会同时看两件事：类型是否满足接口，以及执行时依赖的状态是否已经初始化。</p><h2 id="把失败也放进循环里考虑"><a href="#把失败也放进循环里考虑" class="headerlink" title="把失败也放进循环里考虑"></a>把失败也放进循环里考虑</h2><p>这版循环除了正常调用，还有几条失败路径：</p><ul><li>模型请求失败：返回错误，结束本次运行。</li><li>模型指定了不存在的工具：把错误写成 Observation，交回模型继续处理。</li><li>工具执行失败：把工具错误交回模型，允许下一轮根据反馈调整。</li><li>循环次数耗尽：返回“循环耗尽，未能得到最终答案”。</li></ul><p>命令行入口将最大循环次数设为 5，整个任务使用 60 秒的超时上下文。这样至少能给一次运行设置明确的次数和时间边界。</p><p>不过，5 轮只是停止条件，不能证明任务完成。一次成功的图片实验，也不能说明这些失败路径都已经被充分验证。第一阶段还没有自动化测试，这些都需要后面继续补。</p><h2 id="一个和-Agent-无关、但很容易踩的坑"><a href="#一个和-Agent-无关、但很容易踩的坑" class="headerlink" title="一个和 Agent 无关、但很容易踩的坑"></a>一个和 Agent 无关、但很容易踩的坑</h2><p>同一天，我还修正了 <code>.gitignore</code>。</p><p>原文件的规则带有前导空格，一些说明文字也没有写成注释。修复时把规则顶格书写、给说明行加上 <code>#</code>，并统一了换行格式。</p><p>这个问题提醒我，配置文件写得看起来整齐，并不能证明规则实际生效。尤其是 <code>.env</code> 这样的文件，应该用 <code>git check-ignore</code> 检查匹配结果。也要记住，忽略规则不会自动移除已经被 Git 跟踪的文件。</p><h2 id="这一阶段留下的问题"><a href="#这一阶段留下的问题" class="headerlink" title="这一阶段留下的问题"></a>这一阶段留下的问题</h2><p>到这里，AgentHub 已经能够接收命令行任务，通过模型选择工具，调用图片服务，再根据工具结果生成最终回答。</p><p>但当时还有一个明显的问题：运行结束后主要看到的是最终答案，中间到底调用了什么、传了什么参数、哪里慢了，都不够清楚。</p><p>如果输出不符合预期，我需要区分是模型回复格式出了问题，还是解析器、工具或外部服务出了问题。</p>]]></content>
+    
+    
+    <summary type="html">从模型客户端、工具接口和 ReAct 循环出发，记录 AgentHub 第一次调用图片服务的过程，以及这一阶段遇到的问题。</summary>
+    
+    
+    
+    <category term="项目学习" scheme="https://542501.xyz/categories/%E9%A1%B9%E7%9B%AE%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="AgentHub" scheme="https://542501.xyz/tags/AgentHub/"/>
+    
+    <category term="Go" scheme="https://542501.xyz/tags/Go/"/>
+    
+    <category term="AI Agent" scheme="https://542501.xyz/tags/AI-Agent/"/>
+    
+    <category term="ReAct" scheme="https://542501.xyz/tags/ReAct/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>AgentHub 开发手记（二）：补上解析测试，让运行过程看得见</title>
+    <link href="https://542501.xyz/posts/ab95d0211677480fa0f9a4650cff6718.html"/>
+    <id>https://542501.xyz/posts/ab95d0211677480fa0f9a4650cff6718.html</id>
+    <published>2026-10-09T00:00:00.000Z</published>
+    <updated>2026-10-09T07:20:44.191Z</updated>
+    
+    <content type="html"><![CDATA[<p>上一篇记录了 AgentHub 跑通图片处理的过程。任务能够完成以后，新的问题也出现了：如果结果不对，我怎么知道是哪一步出了问题？</p><p>模型回复、解析器、工具和外部服务连在同一条调用链里，只看最终答案，很难定位原因。因此接下来的改动集中在两个地方：让文本解析能应对已知的格式变化，再把每轮调用记录下来。</p><p>这篇记录的是 2026 年 9 月 22 日对解析器、运行轨迹和工程计划的完善。</p><span id="more"></span><h2 id="文本协议需要处理实际出现的格式"><a href="#文本协议需要处理实际出现的格式" class="headerlink" title="文本协议需要处理实际出现的格式"></a>文本协议需要处理实际出现的格式</h2><p>这一版 AgentHub 用 <code>Action</code>、<code>Action Input</code> 和 <code>Final Answer</code> 从模型回复里提取决策。最开始的实现主要针对格式规整的文本。</p><p>但标签可能出现不同写法。例如，以下都是用于说明解析行为的样例：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Action：echo</span><br></pre></td></tr></table></figure><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">**Action**: echo</span><br></pre></td></tr></table></figure><p>还有内容放到下一行的情况：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Action: echo</span><br><span class="line">Action Input:</span><br><span class="line">第一行</span><br><span class="line">第二行</span><br></pre></td></tr></table></figure><p>如果解析器只认最规整的单行格式，这些变化就可能造成工具名没有提取出来，或输入内容丢失。</p><p>这次修复的做法很直接：先统一全角冒号，再按行拆分标签和值，清理标签周围的空白和星号；遇到 <code>Action Input</code> 或 <code>Final Answer</code> 时，把当前值和后续行合并起来。</p><p>这里的重点是把已经发现的问题落成明确规则，而不是期待提示词让所有输出永远保持一致。</p><h2 id="八个测试把解析行为固定下来"><a href="#八个测试把解析行为固定下来" class="headerlink" title="八个测试把解析行为固定下来"></a>八个测试把解析行为固定下来</h2><p><code>Parse</code> 接收字符串并返回 <code>Decision</code>，没有网络、文件和模型调用。这让它适合用固定输入检查行为。</p><p>这次为解析器补了八个测试，覆盖的情况包括：</p><div class="table-container"><table><thead><tr><th>情况</th><th>检查的行为</th></tr></thead><tbody><tr><td>全角冒号</td><td>能提取 <code>echo</code> 工具名</td></tr><tr><td>Markdown 加粗标签</td><td>能识别 <code>Action</code></td></tr><tr><td>输入从下一行开始</td><td>能提取后续内容</td></tr><tr><td>多行最终答案</td><td>保留换行和完整文本</td></tr><tr><td>多行工具输入</td><td>保留多行输入</td></tr><tr><td>输入后又出现工具标签</td><td>已提取的工具名不被覆盖</td></tr><tr><td>完整工具请求</td><td>工具名和输入都正确</td></tr><tr><td>完整最终回答</td><td>正确判断运行可以结束</td></tr></tbody></table></div><p>测试的意义在于把“这个样例应该怎样解析”保存下来。以后修改解析器时，可以检查这些已知行为是否发生变化。</p><p>但也要认真看断言覆盖到哪里。例如，“输入后又出现工具标签”的测试，只检查先前提取的工具名仍为 <code>echo</code>。当前实现会把 <code>Action Input</code> 后面的全部文本收进输入，它没有证明后面的标签一定被排除。</p><p>同样，这八个测试也不意味着任意非法回复都能处理。字段冲突、缺失字段和复杂的分隔规则，仍然需要另外定义行为。</p><h2 id="解析测试和运行过程记录解决不同的问题"><a href="#解析测试和运行过程记录解决不同的问题" class="headerlink" title="解析测试和运行过程记录解决不同的问题"></a>解析测试和运行过程记录解决不同的问题</h2><p>解析测试能回答：给定一段文本，程序会提取出什么。</p><p>实际运行时，我还想知道：模型这一轮返回了什么，工具有没有被调用，传进去的参数是什么，以及等待时间花在哪里。</p><p>因此，我增加了 <code>Observer</code>。在这一版里，它有两个观察入口：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Observer <span class="keyword">interface</span> &#123;</span><br><span class="line">    OnLLMCall(step <span class="type">int</span>, reply <span class="type">string</span>, err <span class="type">error</span>, elapsed time.Duration)</span><br><span class="line">    OnToolCall(step <span class="type">int</span>, name <span class="type">string</span>, input <span class="type">string</span>,</span><br><span class="line">        output <span class="type">string</span>, err <span class="type">error</span>, elapsed time.Duration)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>Agent 内核在模型调用和工具调用结束后，把结果交给 Observer。具体怎么输出，放在 <code>ConsoleObserver</code> 里实现。</p><p>这样做之后，循环仍然负责执行和消息回传，控制台输出负责展示发生了什么。以后如果需要换一种记录方式，至少有一个可以替换的接口。</p><h2 id="看见时间，也看见输入和结果"><a href="#看见时间，也看见输入和结果" class="headerlink" title="看见时间，也看见输入和结果"></a>看见时间，也看见输入和结果</h2><p>控制台轨迹主要记录这些信息：</p><ul><li>当前轮次。</li><li>模型调用耗时、回复或错误。</li><li>工具名称、输入、执行耗时、结果或错误。</li></ul><p>模型计时围绕一次 <code>Chat</code> 调用，工具计时围绕一次 <code>Execute</code> 调用。因此它们表示的是对应调用经历的时间，包含请求和处理过程，不能直接当成模型内部计算时间。</p><p>有了这些记录，排查问题时就能沿着调用链检查：模型是否输出了预期工具名，解析后传入的参数是否合理，工具是否返回错误，以及下一轮是否收到了反馈。</p><p>未知工具的情况也会记录到 Observer，并生成错误 Observation 交回模型。这样，工具名称错误本身也成为可查看的事件。</p><h2 id="空-Observer-让观察能力保持可选"><a href="#空-Observer-让观察能力保持可选" class="headerlink" title="空 Observer 让观察能力保持可选"></a>空 Observer 让观察能力保持可选</h2><p>构造 Agent 时，如果没有传入 Observer，代码会使用 <code>NopObserver</code>。</p><p>它实现同一个接口，方法体为空。这样内核仍然可以在固定位置调用观察方法，不需要每次都检查 Observer 是否为空。</p><p>这个设计在当前规模下很实用：命令行运行时可以打开控制台轨迹，其他调用场景也可以选择不输出。</p><p>不过，这里的 Observer 是事后观察。工具已经执行完，才把结果交给它。它没有负责批准或拒绝工具调用，因此不能把它当成执行前的权限检查。</p><h2 id="工程计划要和实现状态分别记录"><a href="#工程计划要和实现状态分别记录" class="headerlink" title="工程计划要和实现状态分别记录"></a>工程计划要和实现状态分别记录</h2><p>同一天，我还整理了 AgentHub 的工程化计划，列出了后续的功能方向和验收任务。</p><p>计划的作用是把接下来需要解决的问题写清楚。至于哪些已经完成，仍然要回到对应代码和实际运行情况来看。</p><p>截至这一阶段，解析器有了八个固定输入测试，运行过程有了 Observer 和控制台轨迹。但是 Agent 循环的完整失败路径还没有相应的自动化测试，记录日志也不能替代这些测试。</p>]]></content>
+    
+    
+    <summary type="html">记录 AgentHub 对全角冒号、加粗标签和跨行内容的解析改进，以及通过 Observer 记录模型和工具调用的过程。</summary>
+    
+    
+    
+    <category term="项目学习" scheme="https://542501.xyz/categories/%E9%A1%B9%E7%9B%AE%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="AgentHub" scheme="https://542501.xyz/tags/AgentHub/"/>
+    
+    <category term="Go" scheme="https://542501.xyz/tags/Go/"/>
+    
+    <category term="测试" scheme="https://542501.xyz/tags/%E6%B5%8B%E8%AF%95/"/>
+    
+    <category term="可观测性" scheme="https://542501.xyz/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>AgentHub 开发手记（三）：让回答有依据，补上检索、用量统计与参数校验</title>
+    <link href="https://542501.xyz/posts/1d721c9d4eab478c80aa62e1de648d58.html"/>
+    <id>https://542501.xyz/posts/1d721c9d4eab478c80aa62e1de648d58.html</id>
+    <published>2026-10-09T00:00:00.000Z</published>
+    <updated>2026-10-09T07:20:44.191Z</updated>
+    
+    <content type="html"><![CDATA[<p>前两个阶段，AgentHub 已经能通过模型选择工具，并记录模型和工具的调用过程。接下来，我想让它处理一个更接近业务的问题：根据商店提供的资料回答售后咨询。</p><p>这件事把几个问题放到了一起：回答依据从哪里来，每轮请求到底带了多少内容，以及模型给出的工具参数应该怎样检查。</p><p>这篇记录的是截至 2026 年 10 月 9 日完成的知识检索、模型用量统计和独立图片参数校验。这里的演示商店政策都是练习用的虚构资料。</p><span id="more"></span><h2 id="先做一条能跟清楚的检索链路"><a href="#先做一条能跟清楚的检索链路" class="headerlink" title="先做一条能跟清楚的检索链路"></a>先做一条能跟清楚的检索链路</h2><p>我先把演示商店的退货、保修和运费政策写进 Markdown 文档，用二级标题划分片段，再增加 <code>knowledge_search</code> 工具。</p><p>工具接受空格分隔的关键词，比如：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">耳机 拆封 退货</span><br></pre></td></tr></table></figure><p>当前执行过程是：</p><ol><li>检查上下文是否已取消，拒绝空关键词输入。</li><li>读取知识文档，按二级标题拆分片段。</li><li>将关键词和片段转换为小写，做子串匹配。</li><li>一个片段只要命中任意关键词，就加入结果。</li><li>返回片段内容，并附上来源文件名。</li></ol><p>因此，工具返回给模型的是资料片段，模型再根据这些片段生成回答。</p><p>返回格式会包含这样的来源标识：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">来源：after_sales.md</span><br><span class="line">## 七天退货</span><br></pre></td></tr></table></figure><p>把来源一起回传，可以帮助回答保留依据。不过，模型最终是否引用正确、是否严格遵守资料，仍然需要检查；工具提供资料不能自动保证答案正确。</p><h2 id="无资料，也应该是一个明确结果"><a href="#无资料，也应该是一个明确结果" class="headerlink" title="无资料，也应该是一个明确结果"></a>无资料，也应该是一个明确结果</h2><p>检索工具里有两类需要分开的情况。</p><p>如果文件读取失败、文档没有预期的二级标题，或者输入关键词为空，那是执行或输入错误，会返回 <code>error</code>。</p><p>如果文档正常读取，只是没有片段命中，则返回：</p><blockquote><p>未找到相关资料。当前知识库无法提供这个问题的答案。</p></blockquote><p>工具描述也要求模型在资料不足时说明信息不足。这样，模型下一轮能知道发生的是“正常检索但没有结果”，而不是把它误当成工具运行失败。</p><p>这只能提供明确反馈，不能保证模型每次都遵守。后续仍需要用固定问题检查有资料、无资料和资料冲突时的回答表现。</p><h2 id="关键词匹配的不足已经能看见"><a href="#关键词匹配的不足已经能看见" class="headerlink" title="关键词匹配的不足已经能看见"></a>关键词匹配的不足已经能看见</h2><p>当前规则是“任意关键词命中就返回片段”。它简单，但也容易带回过多内容。</p><p>例如，<code>耳机 拆封 退货</code> 这组词，在当前演示文档里会命中七天退货、耳机保修和退货运费三个片段。模型要处理的资料比直接回答拆封退货问题所需的更多。</p><p>接下来可以考虑统计关键词命中数、排序并只返回前 K 个片段。但这一版还没有评分、排序和 Top-K，也没有接入向量检索。</p><p>先保留这条简单链路，可以把“用户问题 → 检索参数 → 资料片段 → 最终回答”逐步检查清楚，再决定检索能力应该怎样升级。</p><h2 id="用量信息要表达“有没有取得”"><a href="#用量信息要表达“有没有取得”" class="headerlink" title="用量信息要表达“有没有取得”"></a>用量信息要表达“有没有取得”</h2><p>随着循环继续，历史消息和工具结果会被送进下一轮模型请求。为了观察这一过程，我把模型客户端的返回值从正文字符串改成了 <code>Response</code>：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Response <span class="keyword">struct</span> &#123;</span><br><span class="line">    Content <span class="type">string</span></span><br><span class="line">    Usage   *Usage</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Usage <span class="keyword">struct</span> &#123;</span><br><span class="line">    PromptTokens     <span class="type">int</span></span><br><span class="line">    CompletionTokens <span class="type">int</span></span><br><span class="line">    TotalTokens      <span class="type">int</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p><code>Usage</code> 使用指针，是为了区分接口返回了用量数据，还是根本没有返回。</p><p>没有取得用量时，控制台会显示“未取得”。如果只得到部分调用的用量，任务结束时会说明累计数字只包含已取得的部分。</p><p>这样可以避免把缺失数据打印成零，让一个看起来很精确的数字造成误解。</p><p>目前还分别记录模型调用次数和取得用量的调用次数，并通过延迟执行的结束回调汇总。因此提前返回或循环耗尽时，也会输出本次运行已经收集到的统计。</p><h2 id="字符数、Token-和费用分别看"><a href="#字符数、Token-和费用分别看" class="headerlink" title="字符数、Token 和费用分别看"></a>字符数、Token 和费用分别看</h2><p>模型调用前，程序会记录消息条数和消息正文的 rune 数；调用后，如果接口提供了 usage，再记录输入、输出和总 Token 数。</p><p>正文字符数可以帮助观察输入是否不断增长，但它不等于 Token 数，也不包含模型接口所有潜在的协议开销。Token 应以接口实际返回的数据为准。</p><p>同样，用量统计还不等于费用统计。这一版没有接入价格表、预算控制或自动压缩。我现在能够观察的是每轮输入变化、调用耗时，以及已取得的 Token 用量。</p><p>这些数据会帮助后续判断：检索结果是否太多，是否反复带入了不必要的历史，以及一次任务大概经历了多少次模型调用。</p><h2 id="独立参数校验先把规则写清楚"><a href="#独立参数校验先把规则写清楚" class="headerlink" title="独立参数校验先把规则写清楚"></a>独立参数校验先把规则写清楚</h2><p>这一阶段还增加了 <code>internal/tool/validation</code> 包，用 JSON Schema 校验图片缩放参数。</p><p>输入样例是：</p><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;path&quot;</span><span class="punctuation">:</span> <span class="string">&quot;picture/window.jpg&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;width&quot;</span><span class="punctuation">:</span> <span class="number">256</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure><p>当前规则要求根值为对象，必须包含字符串 <code>path</code> 和整数 <code>width</code>，宽度范围为 <code>10</code> 到 <code>4096</code>。</p><p>对应测试覆盖了边界值、缺失字段、类型错误和 JSON 格式错误。例如：</p><div class="table-container"><table><thead><tr><th>输入情况</th><th>当前结果</th></tr></thead><tbody><tr><td>宽度为 10 或 4096</td><td>通过</td></tr><tr><td>宽度为 9 或 4097</td><td>规则校验失败</td></tr><tr><td>宽度为字符串 <code>&quot;128&quot;</code></td><td>规则校验失败</td></tr><tr><td>宽度为 <code>128.0</code></td><td>通过，数值没有小数部分</td></tr><tr><td>宽度为 <code>128.5</code></td><td>规则校验失败</td></tr><tr><td>缺少必需字段</td><td>规则校验失败</td></tr><tr><td>空路径或额外字段</td><td>当前规则允许</td></tr><tr><td>JSON 损坏或连续包含两个值</td><td>JSON 解析失败</td></tr></tbody></table></div><p>“空路径允许”和“额外字段允许”也是现有规则的真实行为。测试把它们明确记录下来，方便以后决定是否收紧规则。</p><p>这个校验器不会检查路径对应的文件是否存在、是否允许访问，也不会执行图片处理。数据满足 schema，只说明它满足当前定义的结构和取值规则。</p><h2 id="当前校验尚未进入工具执行链路"><a href="#当前校验尚未进入工具执行链路" class="headerlink" title="当前校验尚未进入工具执行链路"></a>当前校验尚未进入工具执行链路</h2><p>这一点需要单独说清楚：独立校验器已经有实现和测试，但还没有接入 <code>ImageScaling.Execute</code> 或 Agent 循环。</p><p>当前图片工具仍然接收“路径 宽度”的文本参数，并在自己的 <code>Execute</code> 里做原有检查。Agent 循环也仍然直接调用工具，没有完成执行前的权限判断。</p><p>因此，目前还不能说“所有工具已经统一使用 JSON 参数”或“Agent 已有完整权限系统”。把当前的接口和测试单独做好，是后续接入执行链路的准备。</p><h2 id="这一阶段完成的内容"><a href="#这一阶段完成的内容" class="headerlink" title="这一阶段完成的内容"></a>这一阶段完成的内容</h2><p>到这里，AgentHub 有了三个工具：Echo、图片缩放和知识检索。模型与工具调用有轨迹，模型返回值能携带可选用量，图片参数也有独立的规则校验。</p>]]></content>
+    
+    
+    <summary type="html">记录基础关键词检索、可选模型用量和独立 JSON Schema 参数校验的实现，并说明这些能力当前已经接入到哪里。</summary>
+    
+    
+    
+    <category term="项目学习" scheme="https://542501.xyz/categories/%E9%A1%B9%E7%9B%AE%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="AgentHub" scheme="https://542501.xyz/tags/AgentHub/"/>
+    
+    <category term="Go" scheme="https://542501.xyz/tags/Go/"/>
+    
+    <category term="知识检索" scheme="https://542501.xyz/tags/%E7%9F%A5%E8%AF%86%E6%A3%80%E7%B4%A2/"/>
+    
+    <category term="Token" scheme="https://542501.xyz/tags/Token/"/>
+    
+    <category term="JSON Schema" scheme="https://542501.xyz/tags/JSON-Schema/"/>
+    
+  </entry>
   
   <entry>
     <title>对于股票问题集合的总结（多状态状态机DP）</title>
@@ -216,46 +299,6 @@
   </entry>
   
   <entry>
-    <title>删掉一个元素以后全为 1 的最长子数组</title>
-    <link href="https://542501.xyz/posts/c8a9248.html"/>
-    <id>https://542501.xyz/posts/c8a9248.html</id>
-    <published>2026-09-25T00:00:00.000Z</published>
-    <updated>2026-09-25T00:00:00.000Z</updated>
-    
-    <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你一个二进制数组 <code>nums</code>，你需要从中删掉一个元素。</p><p>请你在删掉元素的结果数组中，返回最长的且只包含 1 的非空子数组的长度。如果不存在这样的子数组，请返回 0。</p><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><strong>示例 1</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [1,1,0,1]</span><br><span class="line">输出：3</span><br></pre></td></tr></table></figure><p>解释：删掉位置 2 的数后，<code>[1,1,1]</code> 包含 3 个 1。</p><p><strong>示例 2</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [0,1,1,1,0,1,1,0,1]</span><br><span class="line">输出：5</span><br></pre></td></tr></table></figure><p>解释：删掉位置 4 的数字后，数组为 <code>[0,1,1,1,1,1,0,1]</code>，最长全 1 子数组为 <code>[1,1,1,1,1]</code>。</p><p><strong>示例 3</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [1,1,1]</span><br><span class="line">输出：2</span><br></pre></td></tr></table></figure><p>解释：必须删除一个元素。</p><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题很有意思，处理方式也非常巧妙，但是依旧可以沿用不定长滑动窗口的做法。</p><p>维护一个最多包含一个 0 的窗口。因为必须删除一个元素，所以候选答案是窗口长度减一，即 <code>right-left</code>。即使整个窗口都是 1，也必须减一。</p><span id="more"></span><h2 id="C-题解"><a href="#C-题解" class="headerlink" title="C++ 题解"></a>C++ 题解</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">longestSubarray</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> cnt0=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> right=<span class="number">0</span>;right&lt;nums.<span class="built_in">size</span>();right++)&#123;</span><br><span class="line">            cnt0=cnt0<span class="number">+1</span>-nums[right];</span><br><span class="line">            <span class="keyword">while</span>(cnt0&gt;<span class="number">1</span>)&#123;</span><br><span class="line">                cnt0-=<span class="number">1</span>-nums[left];</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans=<span class="built_in">max</span>(ans,right-left);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>]]></content>
-    
-    
-    <summary type="html">&lt;blockquote&gt;
-&lt;p&gt;本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h2&gt;&lt;p&gt;给你一个二进制数组 &lt;code&gt;nums&lt;/code&gt;，你需要从中删掉一个元素。&lt;/p&gt;
-&lt;p&gt;请你在删掉元素的结果数组中，返回最长的且只包含 1 的非空子数组的长度。如果不存在这样的子数组，请返回 0。&lt;/p&gt;
-&lt;h3 id=&quot;示例&quot;&gt;&lt;a href=&quot;#示例&quot; class=&quot;headerlink&quot; title=&quot;示例&quot;&gt;&lt;/a&gt;示例&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;示例 1&lt;/strong&gt;&lt;/p&gt;
-&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：nums = [1,1,0,1]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：3&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;解释：删掉位置 2 的数后，&lt;code&gt;[1,1,1]&lt;/code&gt; 包含 3 个 1。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;示例 2&lt;/strong&gt;&lt;/p&gt;
-&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：nums = [0,1,1,1,0,1,1,0,1]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：5&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;解释：删掉位置 4 的数字后，数组为 &lt;code&gt;[0,1,1,1,1,1,0,1]&lt;/code&gt;，最长全 1 子数组为 &lt;code&gt;[1,1,1,1,1]&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;示例 3&lt;/strong&gt;&lt;/p&gt;
-&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：nums = [1,1,1]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;解释：必须删除一个元素。&lt;/p&gt;
-&lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题很有意思，处理方式也非常巧妙，但是依旧可以沿用不定长滑动窗口的做法。&lt;/p&gt;
-&lt;p&gt;维护一个最多包含一个 0 的窗口。因为必须删除一个元素，所以候选答案是窗口长度减一，即 &lt;code&gt;right-left&lt;/code&gt;。即使整个窗口都是 1，也必须减一。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="算法学习" scheme="https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/"/>
-    
-    
-    <category term="C++" scheme="https://542501.xyz/tags/C/"/>
-    
-    <category term="滑动窗口" scheme="https://542501.xyz/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
-    
-    <category term="不定长滑动窗口" scheme="https://542501.xyz/tags/%E4%B8%8D%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
-    
-  </entry>
-  
-  <entry>
     <title>无重复字符的最长子串：用 while 收缩窗口</title>
     <link href="https://542501.xyz/posts/cae8b787.html"/>
     <id>https://542501.xyz/posts/cae8b787.html</id>
@@ -284,48 +327,6 @@
 &lt;/ul&gt;
 &lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题是一个很经典的题目。虽然是不定长滑动窗口，但是依旧可以借鉴滑动窗口的思路：“入、更新、出”。&lt;/p&gt;
 &lt;p&gt;我一开始没想出来，原因是老想用 &lt;code&gt;if/else&lt;/code&gt; 做判断，从而忽略了 &lt;code&gt;while&lt;/code&gt;。可以用 &lt;code&gt;while&lt;/code&gt; 一直判断新加入的 &lt;code&gt;s[i]&lt;/code&gt; 是否重复，并不断移动左端点，直到窗口重新满足无重复字符的条件。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="算法学习" scheme="https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/"/>
-    
-    
-    <category term="C++" scheme="https://542501.xyz/tags/C/"/>
-    
-    <category term="滑动窗口" scheme="https://542501.xyz/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
-    
-    <category term="不定长滑动窗口" scheme="https://542501.xyz/tags/%E4%B8%8D%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
-    
-    <category term="哈希表" scheme="https://542501.xyz/tags/%E5%93%88%E5%B8%8C%E8%A1%A8/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>每个字符最多出现两次的最长子字符串</title>
-    <link href="https://542501.xyz/posts/53dbc00f.html"/>
-    <id>https://542501.xyz/posts/53dbc00f.html</id>
-    <published>2026-09-25T00:00:00.000Z</published>
-    <updated>2026-09-25T00:00:00.000Z</updated>
-    
-    <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你一个字符串 <code>s</code>，请找出满足每个字符最多出现两次的最长子字符串，并返回该子字符串的最大长度。</p><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><strong>示例 1</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：s = &quot;bcbbbcba&quot;</span><br><span class="line">输出：4</span><br></pre></td></tr></table></figure><p>解释：子字符串 <code>&quot;bcba&quot;</code> 的长度为 4，其中每个字符最多出现两次。</p><p><strong>示例 2</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：s = &quot;aaaa&quot;</span><br><span class="line">输出：2</span><br></pre></td></tr></table></figure><p>解释：子字符串 <code>&quot;aa&quot;</code> 的长度为 2，其中字符 <code>a</code> 出现两次。</p><blockquote><p>整理说明：原文复制时丢失了示例中对子字符串的突出显示，这里补写实际满足条件的子字符串。</p></blockquote><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题算是不定长滑动窗口的入门题目了，也是我第一次遇到需要在 <code>for</code> 里面用 <code>while</code> 循环处理的题目。</p><p>之前一直用 <code>if</code> 判断，卡了很久。换成 <code>while</code> 之后豁然开朗：只要新加入的字符出现次数超过两次，就继续移动左端点，直到窗口恢复合法。</p><p>后面几道题目依旧采用这个解法，故而有的文章只给出题解，非必要不再重复文字叙述。</p><span id="more"></span><h2 id="C-题解"><a href="#C-题解" class="headerlink" title="C++ 题解"></a>C++ 题解</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">maximumLengthSubstring</span><span class="params">(string s)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> maxl=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        unordered_map&lt;<span class="type">char</span>,<span class="type">int</span>&gt;nums;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;s.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            nums[s[i]]++;</span><br><span class="line">            maxl++;</span><br><span class="line">            <span class="keyword">while</span>(nums[s[i]]&gt;<span class="number">2</span>)&#123;</span><br><span class="line">                maxl--;</span><br><span class="line">                nums[s[left]]--;</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans=<span class="built_in">max</span>(ans,maxl);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>]]></content>
-    
-    
-    <summary type="html">&lt;blockquote&gt;
-&lt;p&gt;本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h2&gt;&lt;p&gt;给你一个字符串 &lt;code&gt;s&lt;/code&gt;，请找出满足每个字符最多出现两次的最长子字符串，并返回该子字符串的最大长度。&lt;/p&gt;
-&lt;h3 id=&quot;示例&quot;&gt;&lt;a href=&quot;#示例&quot; class=&quot;headerlink&quot; title=&quot;示例&quot;&gt;&lt;/a&gt;示例&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;示例 1&lt;/strong&gt;&lt;/p&gt;
-&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：s = &amp;quot;bcbbbcba&amp;quot;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;解释：子字符串 &lt;code&gt;&amp;quot;bcba&amp;quot;&lt;/code&gt; 的长度为 4，其中每个字符最多出现两次。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;示例 2&lt;/strong&gt;&lt;/p&gt;
-&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：s = &amp;quot;aaaa&amp;quot;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
-&lt;p&gt;解释：子字符串 &lt;code&gt;&amp;quot;aa&amp;quot;&lt;/code&gt; 的长度为 2，其中字符 &lt;code&gt;a&lt;/code&gt; 出现两次。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;整理说明：原文复制时丢失了示例中对子字符串的突出显示，这里补写实际满足条件的子字符串。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题算是不定长滑动窗口的入门题目了，也是我第一次遇到需要在 &lt;code&gt;for&lt;/code&gt; 里面用 &lt;code&gt;while&lt;/code&gt; 循环处理的题目。&lt;/p&gt;
-&lt;p&gt;之前一直用 &lt;code&gt;if&lt;/code&gt; 判断，卡了很久。换成 &lt;code&gt;while&lt;/code&gt; 之后豁然开朗：只要新加入的字符出现次数超过两次，就继续移动左端点，直到窗口恢复合法。&lt;/p&gt;
-&lt;p&gt;后面几道题目依旧采用这个解法，故而有的文章只给出题解，非必要不再重复文字叙述。&lt;/p&gt;</summary>
     
     
     
@@ -392,6 +393,88 @@
     <category term="定长滑动窗口" scheme="https://542501.xyz/tags/%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
     
     <category term="逆向思维" scheme="https://542501.xyz/tags/%E9%80%86%E5%90%91%E6%80%9D%E7%BB%B4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>删掉一个元素以后全为 1 的最长子数组</title>
+    <link href="https://542501.xyz/posts/c8a9248.html"/>
+    <id>https://542501.xyz/posts/c8a9248.html</id>
+    <published>2026-09-25T00:00:00.000Z</published>
+    <updated>2026-09-25T00:00:00.000Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你一个二进制数组 <code>nums</code>，你需要从中删掉一个元素。</p><p>请你在删掉元素的结果数组中，返回最长的且只包含 1 的非空子数组的长度。如果不存在这样的子数组，请返回 0。</p><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><strong>示例 1</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [1,1,0,1]</span><br><span class="line">输出：3</span><br></pre></td></tr></table></figure><p>解释：删掉位置 2 的数后，<code>[1,1,1]</code> 包含 3 个 1。</p><p><strong>示例 2</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [0,1,1,1,0,1,1,0,1]</span><br><span class="line">输出：5</span><br></pre></td></tr></table></figure><p>解释：删掉位置 4 的数字后，数组为 <code>[0,1,1,1,1,1,0,1]</code>，最长全 1 子数组为 <code>[1,1,1,1,1]</code>。</p><p><strong>示例 3</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [1,1,1]</span><br><span class="line">输出：2</span><br></pre></td></tr></table></figure><p>解释：必须删除一个元素。</p><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题很有意思，处理方式也非常巧妙，但是依旧可以沿用不定长滑动窗口的做法。</p><p>维护一个最多包含一个 0 的窗口。因为必须删除一个元素，所以候选答案是窗口长度减一，即 <code>right-left</code>。即使整个窗口都是 1，也必须减一。</p><span id="more"></span><h2 id="C-题解"><a href="#C-题解" class="headerlink" title="C++ 题解"></a>C++ 题解</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">longestSubarray</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> cnt0=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> right=<span class="number">0</span>;right&lt;nums.<span class="built_in">size</span>();right++)&#123;</span><br><span class="line">            cnt0=cnt0<span class="number">+1</span>-nums[right];</span><br><span class="line">            <span class="keyword">while</span>(cnt0&gt;<span class="number">1</span>)&#123;</span><br><span class="line">                cnt0-=<span class="number">1</span>-nums[left];</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans=<span class="built_in">max</span>(ans,right-left);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>]]></content>
+    
+    
+    <summary type="html">&lt;blockquote&gt;
+&lt;p&gt;本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h2&gt;&lt;p&gt;给你一个二进制数组 &lt;code&gt;nums&lt;/code&gt;，你需要从中删掉一个元素。&lt;/p&gt;
+&lt;p&gt;请你在删掉元素的结果数组中，返回最长的且只包含 1 的非空子数组的长度。如果不存在这样的子数组，请返回 0。&lt;/p&gt;
+&lt;h3 id=&quot;示例&quot;&gt;&lt;a href=&quot;#示例&quot; class=&quot;headerlink&quot; title=&quot;示例&quot;&gt;&lt;/a&gt;示例&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;示例 1&lt;/strong&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：nums = [1,1,0,1]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：3&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;解释：删掉位置 2 的数后，&lt;code&gt;[1,1,1]&lt;/code&gt; 包含 3 个 1。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;示例 2&lt;/strong&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：nums = [0,1,1,1,0,1,1,0,1]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：5&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;解释：删掉位置 4 的数字后，数组为 &lt;code&gt;[0,1,1,1,1,1,0,1]&lt;/code&gt;，最长全 1 子数组为 &lt;code&gt;[1,1,1,1,1]&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;示例 3&lt;/strong&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：nums = [1,1,1]&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;解释：必须删除一个元素。&lt;/p&gt;
+&lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题很有意思，处理方式也非常巧妙，但是依旧可以沿用不定长滑动窗口的做法。&lt;/p&gt;
+&lt;p&gt;维护一个最多包含一个 0 的窗口。因为必须删除一个元素，所以候选答案是窗口长度减一，即 &lt;code&gt;right-left&lt;/code&gt;。即使整个窗口都是 1，也必须减一。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="算法学习" scheme="https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="C++" scheme="https://542501.xyz/tags/C/"/>
+    
+    <category term="滑动窗口" scheme="https://542501.xyz/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
+    
+    <category term="不定长滑动窗口" scheme="https://542501.xyz/tags/%E4%B8%8D%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>每个字符最多出现两次的最长子字符串</title>
+    <link href="https://542501.xyz/posts/53dbc00f.html"/>
+    <id>https://542501.xyz/posts/53dbc00f.html</id>
+    <published>2026-09-25T00:00:00.000Z</published>
+    <updated>2026-09-25T00:00:00.000Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。</p></blockquote><h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>给你一个字符串 <code>s</code>，请找出满足每个字符最多出现两次的最长子字符串，并返回该子字符串的最大长度。</p><h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p><strong>示例 1</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：s = &quot;bcbbbcba&quot;</span><br><span class="line">输出：4</span><br></pre></td></tr></table></figure><p>解释：子字符串 <code>&quot;bcba&quot;</code> 的长度为 4，其中每个字符最多出现两次。</p><p><strong>示例 2</strong></p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：s = &quot;aaaa&quot;</span><br><span class="line">输出：2</span><br></pre></td></tr></table></figure><p>解释：子字符串 <code>&quot;aa&quot;</code> 的长度为 2，其中字符 <code>a</code> 出现两次。</p><blockquote><p>整理说明：原文复制时丢失了示例中对子字符串的突出显示，这里补写实际满足条件的子字符串。</p></blockquote><h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><p>这道题算是不定长滑动窗口的入门题目了，也是我第一次遇到需要在 <code>for</code> 里面用 <code>while</code> 循环处理的题目。</p><p>之前一直用 <code>if</code> 判断，卡了很久。换成 <code>while</code> 之后豁然开朗：只要新加入的字符出现次数超过两次，就继续移动左端点，直到窗口恢复合法。</p><p>后面几道题目依旧采用这个解法，故而有的文章只给出题解，非必要不再重复文字叙述。</p><span id="more"></span><h2 id="C-题解"><a href="#C-题解" class="headerlink" title="C++ 题解"></a>C++ 题解</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">maximumLengthSubstring</span><span class="params">(string s)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> ans=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> maxl=<span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left=<span class="number">0</span>;</span><br><span class="line">        unordered_map&lt;<span class="type">char</span>,<span class="type">int</span>&gt;nums;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;s.<span class="built_in">size</span>();i++)&#123;</span><br><span class="line">            nums[s[i]]++;</span><br><span class="line">            maxl++;</span><br><span class="line">            <span class="keyword">while</span>(nums[s[i]]&gt;<span class="number">2</span>)&#123;</span><br><span class="line">                maxl--;</span><br><span class="line">                nums[s[left]]--;</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">            ans=<span class="built_in">max</span>(ans,maxl);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>]]></content>
+    
+    
+    <summary type="html">&lt;blockquote&gt;
+&lt;p&gt;本文由旧博客内容整理迁入。原发布日期未提供，页面日期为本次整理日期。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h2&gt;&lt;p&gt;给你一个字符串 &lt;code&gt;s&lt;/code&gt;，请找出满足每个字符最多出现两次的最长子字符串，并返回该子字符串的最大长度。&lt;/p&gt;
+&lt;h3 id=&quot;示例&quot;&gt;&lt;a href=&quot;#示例&quot; class=&quot;headerlink&quot; title=&quot;示例&quot;&gt;&lt;/a&gt;示例&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;示例 1&lt;/strong&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：s = &amp;quot;bcbbbcba&amp;quot;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：4&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;解释：子字符串 &lt;code&gt;&amp;quot;bcba&amp;quot;&lt;/code&gt; 的长度为 4，其中每个字符最多出现两次。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;示例 2&lt;/strong&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight text&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;输入：s = &amp;quot;aaaa&amp;quot;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;输出：2&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;解释：子字符串 &lt;code&gt;&amp;quot;aa&amp;quot;&lt;/code&gt; 的长度为 2，其中字符 &lt;code&gt;a&lt;/code&gt; 出现两次。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;整理说明：原文复制时丢失了示例中对子字符串的突出显示，这里补写实际满足条件的子字符串。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;解题思路&quot;&gt;&lt;a href=&quot;#解题思路&quot; class=&quot;headerlink&quot; title=&quot;解题思路&quot;&gt;&lt;/a&gt;解题思路&lt;/h2&gt;&lt;p&gt;这道题算是不定长滑动窗口的入门题目了，也是我第一次遇到需要在 &lt;code&gt;for&lt;/code&gt; 里面用 &lt;code&gt;while&lt;/code&gt; 循环处理的题目。&lt;/p&gt;
+&lt;p&gt;之前一直用 &lt;code&gt;if&lt;/code&gt; 判断，卡了很久。换成 &lt;code&gt;while&lt;/code&gt; 之后豁然开朗：只要新加入的字符出现次数超过两次，就继续移动左端点，直到窗口恢复合法。&lt;/p&gt;
+&lt;p&gt;后面几道题目依旧采用这个解法，故而有的文章只给出题解，非必要不再重复文字叙述。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="算法学习" scheme="https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="C++" scheme="https://542501.xyz/tags/C/"/>
+    
+    <category term="滑动窗口" scheme="https://542501.xyz/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
+    
+    <category term="不定长滑动窗口" scheme="https://542501.xyz/tags/%E4%B8%8D%E5%AE%9A%E9%95%BF%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"/>
+    
+    <category term="哈希表" scheme="https://542501.xyz/tags/%E5%93%88%E5%B8%8C%E8%A1%A8/"/>
     
   </entry>
   
@@ -515,7 +598,7 @@
     <link href="https://542501.xyz/posts/36208.html"/>
     <id>https://542501.xyz/posts/36208.html</id>
     <published>2025-08-20T14:51:31.000Z</published>
-    <updated>2026-10-09T05:49:45.855Z</updated>
+    <updated>2026-10-09T07:20:44.191Z</updated>
     
     <content type="html"><![CDATA[<h1 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h1><p>这是我的第一篇blog，有些紧张，也有点粗糙，我也会把他尽量的弄得好看些，这篇blog应该会是我相当于笔记本的一个东西，用来记录深度学习的一些内容，因为我发现我经常看了后面忘前面，现在要好好整理一下了，应该会直接从CNN开始，跳过python基础，当然，如果我发现我的python也忘记了的话，我可能又会去补一个python的专栏。第一篇大概就是这么多,开学之后尽量一周一更</p>]]></content>
     

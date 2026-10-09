@@ -20,6 +20,33 @@
   </url>
   
   <url>
+    <loc>https://542501.xyz/posts/5c3b148f0d174ea296854b367762bc10.html</loc>
+    
+    <lastmod>2026-10-09</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/posts/ab95d0211677480fa0f9a4650cff6718.html</loc>
+    
+    <lastmod>2026-10-09</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/posts/1d721c9d4eab478c80aa62e1de648d58.html</loc>
+    
+    <lastmod>2026-10-09</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://542501.xyz/posts/36208.html</loc>
     
     <lastmod>2026-10-09</lastmod>
@@ -110,15 +137,6 @@
   </url>
   
   <url>
-    <loc>https://542501.xyz/posts/c8a9248.html</loc>
-    
-    <lastmod>2026-09-25</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://542501.xyz/posts/cae8b787.html</loc>
     
     <lastmod>2026-09-25</lastmod>
@@ -128,7 +146,7 @@
   </url>
   
   <url>
-    <loc>https://542501.xyz/posts/53dbc00f.html</loc>
+    <loc>https://542501.xyz/posts/898b317c.html</loc>
     
     <lastmod>2026-09-25</lastmod>
     
@@ -137,7 +155,16 @@
   </url>
   
   <url>
-    <loc>https://542501.xyz/posts/898b317c.html</loc>
+    <loc>https://542501.xyz/posts/c8a9248.html</loc>
+    
+    <lastmod>2026-09-25</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/posts/53dbc00f.html</loc>
     
     <lastmod>2026-09-25</lastmod>
     
@@ -171,6 +198,69 @@
     <priority>1.0</priority>
   </url>
 
+  
+  <url>
+    <loc>https://542501.xyz/tags/AgentHub/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/Go/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/AI-Agent/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/ReAct/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/%E6%B5%8B%E8%AF%95/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/%E7%9F%A5%E8%AF%86%E6%A3%80%E7%B4%A2/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/Token/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://542501.xyz/tags/JSON-Schema/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
   
   <url>
     <loc>https://542501.xyz/tags/C/</loc>
@@ -243,6 +333,13 @@
   </url>
   
   <url>
+    <loc>https://542501.xyz/tags/%E6%9C%89%E6%9D%A1%E4%BB%B6%E9%80%92%E5%BD%92/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://542501.xyz/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</loc>
     <lastmod>2026-10-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -263,14 +360,14 @@
     <priority>0.2</priority>
   </url>
   
+
+  
   <url>
-    <loc>https://542501.xyz/tags/%E6%9C%89%E6%9D%A1%E4%BB%B6%E9%80%92%E5%BD%92/</loc>
+    <loc>https://542501.xyz/categories/%E9%A1%B9%E7%9B%AE%E5%AD%A6%E4%B9%A0/</loc>
     <lastmod>2026-10-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
-  
-
   
   <url>
     <loc>https://542501.xyz/categories/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0/</loc>

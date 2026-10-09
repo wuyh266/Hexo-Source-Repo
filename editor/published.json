@@ -1,4 +1,25 @@
 {
+  "agenthub-01-react-and-tools.md": {
+    "title": "AgentHub 开发手记（一）：用 Go 跑通 ReAct 和第一个真实工具",
+    "categories": [
+      "项目学习"
+    ],
+    "date": "2026-10-09"
+  },
+  "agenthub-02-parser-and-trace.md": {
+    "title": "AgentHub 开发手记（二）：补上解析测试，让运行过程看得见",
+    "categories": [
+      "项目学习"
+    ],
+    "date": "2026-10-09"
+  },
+  "agenthub-03-knowledge-usage-validation.md": {
+    "title": "AgentHub 开发手记（三）：让回答有依据，补上检索、用量统计与参数校验",
+    "categories": [
+      "项目学习"
+    ],
+    "date": "2026-10-09"
+  },
   "equal-substrings-within-budget.md": {
     "title": "尽可能使字符串相等：预算限制下的滑动窗口",
     "categories": [
