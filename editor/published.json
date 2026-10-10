@@ -20,6 +20,13 @@
     ],
     "date": "2026-10-09"
   },
+  "agenthub-04-permission-policy.md": {
+    "title": "AgentHub 实战手记（四）：工具想动手，先把权限问明白",
+    "categories": [
+      "项目实战手记"
+    ],
+    "date": "2026-10-10"
+  },
   "equal-substrings-within-budget.md": {
     "title": "尽可能使字符串相等：预算限制下的滑动窗口",
     "categories": [
