@@ -27,6 +27,13 @@
     ],
     "date": "2026-10-10"
   },
+  "agenthub-05-hooks-in-agent-loop.md": {
+    "title": "AgentHub 实战手记（五）：给工具调用加上 Hook，让“先等等”真的生效",
+    "categories": [
+      "项目实战手记"
+    ],
+    "date": "2026-10-16"
+  },
   "equal-substrings-within-budget.md": {
     "title": "尽可能使字符串相等：预算限制下的滑动窗口",
     "categories": [
