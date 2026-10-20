@@ -34,6 +34,13 @@
     ],
     "date": "2026-10-16"
   },
+  "agenthub-06-todo-planning.md": {
+    "title": "AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完",
+    "categories": [
+      "项目实战手记"
+    ],
+    "date": "2026-10-20"
+  },
   "equal-substrings-within-budget.md": {
     "title": "尽可能使字符串相等：预算限制下的滑动窗口",
     "categories": [
