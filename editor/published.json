@@ -41,6 +41,20 @@
     ],
     "date": "2026-10-20"
   },
+  "agenthub-07-multifile-skill.md": {
+    "title": "AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件",
+    "categories": [
+      "项目实战手记"
+    ],
+    "date": "2026-10-30"
+  },
+  "agenthub-08-memory-save-and-recall.md": {
+    "title": "AgentHub 实战手记（八）：让“记住了”走完保存、召回和模型输入",
+    "categories": [
+      "项目实战手记"
+    ],
+    "date": "2026-10-30"
+  },
   "equal-substrings-within-budget.md": {
     "title": "尽可能使字符串相等：预算限制下的滑动窗口",
     "categories": [

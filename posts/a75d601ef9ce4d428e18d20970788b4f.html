@@ -1,0 +1,233 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件 | Decwoveh的学习周记</title><meta name="author" content="Decwoveh"><meta name="copyright" content="Decwoveh"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="用订单汇总示例拆清 Skill 的入口说明、业务规则、执行脚本和报告模板，记录文件怎样配合，以及宿主还没有接上的部分。"><meta property="og:type" content="article"><meta property="og:title" content="AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件"><meta property="og:url" content="https://542501.xyz/posts/a75d601ef9ce4d428e18d20970788b4f.html"><meta property="og:site_name" content="Decwoveh的学习周记"><meta property="og:description" content="用订单汇总示例拆清 Skill 的入口说明、业务规则、执行脚本和报告模板，记录文件怎样配合，以及宿主还没有接上的部分。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://542501.xyz/img/touxiang.png"><meta property="article:published_time" content="2026-10-30T00:00:00.000Z"><meta property="article:modified_time" content="2026-10-30T14:45:46.196Z"><meta property="article:author" content="Decwoveh"><meta property="article:tag" content="AgentHub"><meta property="article:tag" content="工具调用"><meta property="article:tag" content="Skills"><meta property="article:tag" content="Python"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://542501.xyz/img/touxiang.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件",
+  "url": "https://542501.xyz/posts/a75d601ef9ce4d428e18d20970788b4f.html",
+  "image": "https://542501.xyz/img/touxiang.png",
+  "datePublished": "2026-10-30T00:00:00.000Z",
+  "dateModified": "2026-10-30T14:45:46.196Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Decwoveh",
+      "url": "https://542501.xyz"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://542501.xyz/posts/a75d601ef9ce4d428e18d20970788b4f.html"><link rel="preconnect"><link rel="preconnect" href="//busuanzi.ibruce.info"><link rel="manifest" href="/manifest.json"><meta name="msapplication-TileColor" content="#3b70fc"><link rel="apple-touch-icon" sizes="180x180" href="/img/siteicon/%E8%A5%BF%E7%93%9C128.png"><link rel="icon" type="image/png" sizes="32x32" href="/img/siteicon/%E8%A5%BF%E7%93%9C32.png"><link rel="icon" type="image/png" sizes="16x16" href="/img/siteicon/%E8%A5%BF%E7%93%9C16.png"><link rel="mask-icon" href="/img/siteicon/%E8%A5%BF%E7%93%9C128.png" color="#5bbad5"><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><script>(() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()</script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: '/',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE={title:"AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件",isHighlightShrink:!1,isToc:!0,pageType:"post"}</script><link rel="stylesheet" href="/css/custom.css" media="defer" onload='this.media="all"'><script>!function(){var c=["fastly.jsdelivr.net","gcore.jsdelivr.net","testingcf.jsdelivr.net","cdn.jsdelivr.net"];window.loadWithFallback=function(l,r){var o=0;!function e(){var n=l.replace("fastly.jsdelivr.net",c[o]),t=document.createElement("link");t.rel="stylesheet",t.href=n,t.onerror=function(){++o<c.length?e():r&&r()},t.onload=function(){r&&r()},document.head.appendChild(t)}()},window.loadScriptWithFallback=function(l,r){var o=0;!function e(){var n=l.replace("fastly.jsdelivr.net",c[o]),t=document.createElement("script");t.src=n,t.onerror=function(){++o<c.length?e():r&&r()},t.onload=function(){r&&r()},document.head.appendChild(t)}()}}()</script><link rel="stylesheet" href="https://cdn.cbd.int/hexo-butterfly-tag-plugins-plus@latest/lib/assets/font-awesome-animation.min.css" media="defer" onload='this.media="all"'><link rel="stylesheet" href="https://cdn.cbd.int/hexo-butterfly-tag-plugins-plus@latest/lib/tag_plugins.css" media="defer" onload='this.media="all"'><script src="https://cdn.cbd.int/hexo-butterfly-tag-plugins-plus@latest/lib/assets/carousel-touch.js"></script><link rel="stylesheet" href="https://cdn.cbd.int/hexo-butterfly-wowjs/lib/animate.min.css" media="print" onload='this.media="screen"'><meta name="generator" content="Hexo 7.3.0"><link rel="alternate" href="/atom.xml" title="Decwoveh的学习周记" type="application/atom+xml"></head><body><div id="web_bg" style="background-image:url(/img/bac_v2.jpg?v=2.0)"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/touxiang.png" onerror='this.onerror=null,this.src="/img/friend_404.gif"' alt="avatar"></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">36</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i> <span>首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i> <span>标签</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i> <span>归档</span></a></div><div class="menus_item"><a class="site-page" href="/comments/"><i class="fa-fw fas fa-envelope"></i> <span>留言板</span></a></div><div class="menus_item"><a class="site-page" href="/editor/"><i class="fa-fw fas fa-pen-nib"></i> <span>写作间</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Decwoveh的学习周记</span></a><a class="nav-page-title" href="/"><span class="site-name">AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i> <span>返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i> <span>搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i> <span>首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i> <span>标签</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i> <span>归档</span></a></div><div class="menus_item"><a class="site-page" href="/comments/"><i class="fa-fw fas fa-envelope"></i> <span>留言板</span></a></div><div class="menus_item"><a class="site-page" href="/editor/"><i class="fa-fw fas fa-pen-nib"></i> <span>写作间</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-10-30T00:00:00.000Z" title="发表于 2026-10-30 00:00:00">2026-10-30</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-10-30T14:45:46.196Z" title="更新于 2026-10-30 14:45:46">2026-10-30</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98%E6%89%8B%E8%AE%B0/">项目实战手记</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/posts/a75d601ef9ce4d428e18d20970788b4f.html#post-comment"><span class="waline-comment-count" data-path="/posts/a75d601ef9ce4d428e18d20970788b4f.html"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>以前提到 Skill，我容易把注意力都放在那份 Markdown 上：把步骤写清楚，模型照着看，好像就能把事情做好。</p><p>但如果任务是“读订单 CSV，生成一份汇总报告”，里面还有字段校验、金额计算和文件输出。说明书可以告诉人怎么做饭，菜总得有人下锅。</p><p>10 月 29 日，我在 AgentHub 的独立课程目录里补齐了一个多文件订单汇总示例。这篇沿着它看一遍：入口说明怎样引用规则，脚本怎样处理数据，模板怎样参与生成结果。</p><p>先把位置说清楚：这是独立课程示例，尚未接入主入口 <code>cmd/agenthub</code>。当前能够直接运行的是 Python 脚本，不能把“技能文件已经存在”理解成 Agent 已经能自动发现和执行它。</p><span id="more"></span><h2 id="一份技能，把不同职责放进不同文件"><a href="#一份技能，把不同职责放进不同文件" class="headerlink" title="一份技能，把不同职责放进不同文件"></a>一份技能，把不同职责放进不同文件</h2><p>这一版的目录很小：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">order-summary/</span><br><span class="line">├── SKILL.md</span><br><span class="line">├── references/order-rules.md</span><br><span class="line">├── scripts/summarize_orders.py</span><br><span class="line">├── assets/report-template.html</span><br><span class="line">└── samples/orders.csv</span><br></pre></td></tr></table></figure><p><strong>作用：</strong> 将入口说明、统计规则、执行程序、输出模板和演示数据分开。阅读时能看出哪些文件指导操作，哪些文件真正参与运行。</p><p><strong>技术栈：</strong> 普通文件目录、Markdown、Python 标准库、HTML 和 CSV，不需要额外安装统计库。</p><p><strong>关键用法：</strong> 从 <code>SKILL.md</code> 找到适用任务与操作步骤，再按引用读取规则文件。<code>scripts</code> 中的程序执行统计，<code>assets</code> 中的模板控制报告结构，<code>samples</code> 只提供演示输入；真实任务应使用实际数据。</p><p>这样拆开以后，修改统计口径时，可以先改规则与对应程序；调整报告样式时，可以集中看模板。入口说明不用把所有细节挤成一堵文字墙。</p><p>入口文件开头提供名称和用途：</p><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span> <span class="string">order-summary</span></span><br><span class="line"><span class="attr">description:</span> <span class="string">统计订单</span> <span class="string">CSV</span> <span class="string">中已支付订单的数量和金额，并生成</span> <span class="string">HTML</span> <span class="string">汇总报告。用于用户提供订单</span> <span class="string">CSV、要求订单汇总或生成统计报告的任务。</span></span><br></pre></td></tr></table></figure><p><strong>作用：</strong> 描述技能叫什么、适合处理什么任务，帮助发现阶段判断是否需要继续读取正文。</p><p><strong>技术栈：</strong> Markdown 入口文件中的 YAML front matter。上面摘出的是实际入口里的字段，完整文件用 <code>---</code> 包住这部分。</p><p><strong>关键用法：</strong> <code>name</code> 标识技能，<code>description</code> 说明触发场景和产物。描述本身不会启动脚本；加载器需要读取这些信息，宿主还需要提供文件读取和程序执行能力。</p><p>这一点在当前代码里尤其具体：原有 Go 示例扫描的是 <code>s07_skill_loading/skills</code>，新增订单示例放在 <code>examples/order-summary</code>。它尚未进入那份自动发现目录。即使把入口加载进模型上下文，相对引用的文件和脚本执行也还需要宿主工具配合。</p><h2 id="统计之前，先约定什么算一笔有效订单"><a href="#统计之前，先约定什么算一笔有效订单" class="headerlink" title="统计之前，先约定什么算一笔有效订单"></a>统计之前，先约定什么算一笔有效订单</h2><p>规则文件要求 CSV 包含 <code>order_id</code>、<code>status</code>、<code>amount</code>。订单编号不能空，也不能重复；状态只能是 <code>paid</code>、<code>refunded</code>、<code>cancelled</code>。只有已支付订单计入数量与金额，其他两种状态计入排除数量。</p><p>这个口径描述的是示例中的已支付金额，不能顺手把它改称净收入。退款净额需要另外定义规则。</p><p>脚本读一行就校验一行。遇到坏数据会结束本次处理，只有整份数据处理成功以后才生成报告。下面是金额检查的实际片段，位于读取 CSV 行的循环内：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    amount = Decimal(row[<span class="string">&quot;amount&quot;</span>].strip())</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> amount.is_finite() <span class="keyword">or</span> amount &lt; <span class="number">0</span> <span class="keyword">or</span> amount != amount.quantize(Decimal(<span class="string">&quot;0.01&quot;</span>)):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;amount must be finite, nonnegative, and in whole cents&quot;</span>)</span><br><span class="line"><span class="keyword">except</span> (InvalidOperation, ValueError) <span class="keyword">as</span> error:</span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">f&quot;line <span class="subst">&#123;reader.line_num&#125;</span>: invalid amount&quot;</span>) <span class="keyword">from</span> error</span><br></pre></td></tr></table></figure><p><strong>作用：</strong> 将金额解析成十进制数，拒绝非有限值、负数和不是整分的数值。出错时带上 CSV 行号，方便定位原始输入。</p><p><strong>技术栈：</strong> Python 标准库 <code>decimal</code> 与异常处理；外围使用 <code>csv.DictReader</code> 按表头读取字段。</p><p><strong>关键用法：</strong> <code>Decimal</code> 直接从字符串构造；<code>is_finite()</code> 排除无穷与 NaN；<code>quantize(Decimal(&quot;0.01&quot;))</code> 得到按分表示的值，再与原值比较。<code>raise ... from error</code> 保留原始异常关系。这段代码依赖外围已经准备好的 <code>row</code> 和 <code>reader</code>。</p><p>这里没有先转成 <code>float</code> 再补救。像 <code>0.10</code> 和 <code>0.20</code> 这样的输入，从读取到累计都走十进制路径。订单编号去重、状态检查、列数检查则在同一个循环里分别完成。</p><p>脚本也没有静默跳过错误行。否则报告表面生成成功，读者却不知道有多少数据被漏掉，后面的解释就很难站稳。</p><h2 id="模板参与生成，输出文件也有自己的边界"><a href="#模板参与生成，输出文件也有自己的边界" class="headerlink" title="模板参与生成，输出文件也有自己的边界"></a>模板参与生成，输出文件也有自己的边界</h2><p>统计成功后，程序把结果填入 HTML 模板。下面摘出实际生成与写入部分：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">stats = summarize_orders(args.<span class="built_in">input</span>)</span><br><span class="line">values = &#123;key: <span class="built_in">str</span>(value) <span class="keyword">for</span> key, value <span class="keyword">in</span> stats.items()&#125;</span><br><span class="line">values[<span class="string">&quot;source_name&quot;</span>] = escape(args.<span class="built_in">input</span>.name)</span><br><span class="line">template = Template(args.template.read_text(encoding=<span class="string">&quot;utf-8&quot;</span>))</span><br><span class="line">report = template.substitute(values)</span><br><span class="line">args.output.parent.mkdir(parents=<span class="literal">True</span>, exist_ok=<span class="literal">True</span>)</span><br><span class="line"><span class="keyword">with</span> args.output.<span class="built_in">open</span>(<span class="string">&quot;x&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> target:</span><br><span class="line">    target.write(report)</span><br></pre></td></tr></table></figure><p><strong>作用：</strong> 取得统计结果，将值填入模板，并写出报告。源数据只被读取；目标文件已经存在时，写入会报错。</p><p><strong>技术栈：</strong> Python 标准库 <code>pathlib</code>、<code>string.Template</code> 与 <code>html.escape</code>，输出是普通 HTML。</p><p><strong>关键用法：</strong> <code>Template.substitute</code> 替换模板里的占位符，缺少必要值时会报错；<code>escape</code> 处理要显示在 HTML 中的数据文件名；<code>open(&quot;x&quot;)</code> 以排他创建模式打开目标，避免覆盖已有报告。模板内容本身来自技能目录中的可信文件。</p><p>默认模板的位置根据脚本文件自身定位：由 <code>__file__</code> 找回技能根目录，再进入 <code>assets</code>。因此，使用者不必先切换到技能目录才能运行它。</p><p>入口说明中写“生成报告”，真正把文件写出来的，是这里的程序调用。只有程序成功返回，才有依据向用户说明报告已经生成。</p><h2 id="在项目根目录实际运行"><a href="#在项目根目录实际运行" class="headerlink" title="在项目根目录实际运行"></a>在项目根目录实际运行</h2><p>可以在 AgentHub 根目录选择一个尚不存在的输出文件：</p><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$skillRoot</span> = (<span class="built_in">Resolve-Path</span> <span class="string">&quot;.\learning\learn-claude-code\s07_skill_loading\examples\order-summary&quot;</span>).Path</span><br><span class="line">python <span class="string">&quot;<span class="variable">$skillRoot</span>\scripts\summarize_orders.py&quot;</span> <span class="literal">--input</span> <span class="string">&quot;<span class="variable">$skillRoot</span>\samples\orders.csv&quot;</span> <span class="literal">--output</span> <span class="string">&quot;.\order-summary-report.html&quot;</span></span><br></pre></td></tr></table></figure><p><strong>作用：</strong> 从技能目录之外启动脚本，读取演示 CSV，并在当前目录生成 HTML 报告。</p><p><strong>技术栈：</strong> PowerShell、Python 3，以及技能中配套的脚本、规则与模板。</p><p><strong>关键用法：</strong> <code>Resolve-Path</code> 取得已有技能目录的绝对位置；<code>--input</code> 指定 CSV，<code>--output</code> 指定新报告。程序成功时打印 JSON 结果，失败时返回非零退出码。重复使用已经存在的输出文件名会被拒绝，需要选择新的文件名。</p><p>这个运行方式验证的是脚本及其配套文件能否协同工作。它没有经过真实模型的技能选择，也没有自动完成“发现技能、读取引用、执行脚本”的整条 Agent 路径。</p><h2 id="这一版的优点"><a href="#这一版的优点" class="headerlink" title="这一版的优点"></a>这一版的优点</h2><ul><li><strong>职责容易沿文件追踪。</strong> 入口指导流程，规则解释口径，程序完成计算，模板提供报告结构。</li><li><strong>输入与输出边界明确。</strong> 错误行会使本次处理失败，源 CSV 保持原样，已有报告不会被覆盖。</li><li><strong>执行结果可以直接核对。</strong> JSON 结果和 HTML 报告来自同一次统计，脚本使用标准库，也方便独立运行。</li></ul><h2 id="还没有补齐的地方"><a href="#还没有补齐的地方" class="headerlink" title="还没有补齐的地方"></a>还没有补齐的地方</h2><ul><li><strong>宿主接线仍未完成。</strong> 当前订单示例没有进入 Go 示例默认扫描的技能目录，也没有配置一条自动读取引用并执行脚本的 Agent 工具链。</li><li><strong>统计口径只覆盖示例合同。</strong> 退款净额、多币种或其他订单状态需要重新设计，不能只修改结果名称就当作已经支持。</li><li><strong>直接运行不等于模型会用。</strong> 这些验证说明程序能处理给定输入，真实模型能否选对技能、参数和文件，仍需单独评估。</li></ul><p>把文件拆开以后，我更容易看清一份 Skill 到底交付了什么：它提供可复用的操作方式，也可以带着执行所需的程序与素材。最终动作仍要由宿主真正调用，结果仍要从实际运行中取得。</p></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者:</span> <span class="post-copyright-info"><a href="https://542501.xyz">Decwoveh</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接:</span> <span class="post-copyright-info"><a href="https://542501.xyz/posts/a75d601ef9ce4d428e18d20970788b4f.html">https://542501.xyz/posts/a75d601ef9ce4d428e18d20970788b4f.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明:</span> <span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://542501.xyz" target="_blank">Decwoveh的学习周记</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/AgentHub/">AgentHub</a><a class="post-meta__tags" href="/tags/%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8/">工具调用</a><a class="post-meta__tags" href="/tags/Skills/">Skills</a><a class="post-meta__tags" href="/tags/Python/">Python</a></div><div class="post-share"><div class="social-share" data-image="/img/touxiang.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="/" media="print" onload='this.media="all"'><script src="/" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/posts/b2a8a3dd480a4f31bfc00c25e0290646.html" title="AgentHub 实战手记（八）：让“记住了”走完保存、召回和模型输入"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">AgentHub 实战手记（八）：让“记住了”走完保存、召回和模型输入</div></div><div class="info-2"><div class="info-item-1">让模型说一句“记住了”并不难。麻烦的是，把程序关掉，再开一次，它到底还能拿到什么？ 如果偏好只留在上一次的消息列表里，新会话未必能看到；如果保存到了文件，却没有放进下一次模型输入，模型同样无从得知。 10 月 29 日，AgentHub 的独立课程示例把这条路径补得更直观了：先结束一次会话，提取并保存候选记忆；再用新进程打开同一个文件，召回相关记录，送进新的工作模型输入。 这篇讲的是独立的 s09_memory 示例，尚未接入主入口 cmd/agenthub。默认模型回复是固定的，重点在于检查宿主有没有把数据接过去，不能据此认定真实模型已经具备可靠的长期记忆效果。 先结束当前回复，再考虑保存什么示例使用一条偏好：“以后退货回答要保留来源，并说明已确认的适用条件。” 当前回复与持久保存分开处理。会话正常结束以后，程序才进入提取阶段。下面是已有 session、ctx 和 query 之后的实际片段： 1234567out, err := session.Run(ctx, query)if err != nil &#123; return err&#125;if out.St...</div></div></div></a><a class="pagination-related" href="/posts/e782139cb46b4d459ebeced5201e68d2.html" title="AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完</div></div><div class="info-2"><div class="info-item-1">做一件事时，脑子里记着“先查资料，再整理答复”还算轻松。事情一多，查到一半去处理别的，再回来，就容易忘掉刚才停在哪里。 Agent 处理多步骤任务时，也需要一个地方记下：准备做什么，正在做什么，还有什么没处理。 这次整理的是 10 月 19 日完成的 Todo 主程序集成。新增的 todo_write 已经进入 AgentHub 原有的工具表，与知识检索共用模型循环、Hooks 和运行观察器。命令行入口也能直接运行这套流程。 不过，给一件事打勾很容易，确认它真的做完要难一些。这一版的清单负责保存状态和发出提醒，完成标记仍由调用方提交，业务结果还得另外核对。 先说清楚：这次提交的是整张清单todo_write 接收一个 JSON 对象，其中的 todos 是完整清单。例如，查询条款刚开始时，可以提交： 123456&#123; &quot;todos&quot;: [ &#123;&quot;content&quot;: &quot;查询拆封耳机退货条款&quot;, &quot;status&quot;: &quot;in_progress&quot;&#125;, ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/91adeb2f7fe0495cb825f6b07dc4a510.html" title="AgentHub 实战手记（四）：工具想动手，先把权限问明白"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-10</div><div class="info-item-2">AgentHub 实战手记（四）：工具想动手，先把权限问明白</div></div><div class="info-2"><div class="info-item-1">图片缩放能跑起来以后，我又开始琢磨另一个问题：一句“把图片缩放一下”，里面其实藏着好几个动作。 图片可能在允许目录之外，要发送给一个外部服务，保存时还可能覆盖同名文件。任务听起来很简单，真正动手之前，却需要把这些事情分别问清楚。 昨晚新增的独立权限判断，就是在整理这份规则。今天回头看代码，我想把其中的三个角色拆明白：发生了什么、哪些操作已经获批，以及最后应该怎么办。 这一版先完成判断函数 Evaluate。它还没有接入 Agent 的执行循环，下面讲的是已经写出的策略逻辑。 先把事实、授权和决定放在不同的位置如果把所有信息都塞进一个结构体里，写着写着就容易混淆：文件在目录外，是一个事实；允许访问目录外，是一项授权。两者回答的问题不同。 所以这里分成了三个值类型： 123456789101112131415161718type Facts struct &#123; ToolName string TouchesPrivate bool OutsideAllowedArea bool ServiceAllowed boo...</div></div></div></a><a class="pagination-related" href="/posts/b47bca51ec9945a4b9301b580f28fc72.html" title="AgentHub 实战手记（五）：给工具调用加上 Hook，让“先等等”真的生效"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-16</div><div class="info-item-2">AgentHub 实战手记（五）：给工具调用加上 Hook，让“先等等”真的生效</div></div><div class="info-2"><div class="info-item-1">上一篇写权限判断时，我把“允许、询问、拒绝”拆进了独立函数。不过，函数能算出结果，和工具真的会停下来，中间还隔着一步。 想象一下：门口的检查员已经说了“先等等”，里面的工具却照常开工。规则写得再清楚，也只是多了一句提醒。 这次整理的是 10 月 15 日接入 AgentHub 主工程的 Hook。现在，程序在工具执行前会调用登记好的检查，读完结果，再决定要不要进入 Execute。工具执行之后和模型准备结束时，也都有了对应的处理位置。 我最想弄清楚的是：回调把话说出来以后，主流程究竟有没有照着做。 先给四个时机安排位置Agent 的主循环原本就有顺序：组织消息、请求模型、解析回复、执行工具、回填结果。Hook 是在这些确定的位置，调用外部登记的函数。 这一版接入了四种事件： 事件 触发时机 主流程怎样使用结果 UserPromptSubmit 第一次请求模型之前 将返回的背景追加到消息中，保留原问题；回调报错则结束本次运行 PreToolUse 找到工具后、调用 Execute 前 阻断或检查失败都会跳过工具，并把未执行的原因反馈给模型 PostTool...</div></div></div></a><a class="pagination-related" href="/posts/e782139cb46b4d459ebeced5201e68d2.html" title="AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-20</div><div class="info-item-2">AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完</div></div><div class="info-2"><div class="info-item-1">做一件事时，脑子里记着“先查资料，再整理答复”还算轻松。事情一多，查到一半去处理别的，再回来，就容易忘掉刚才停在哪里。 Agent 处理多步骤任务时，也需要一个地方记下：准备做什么，正在做什么，还有什么没处理。 这次整理的是 10 月 19 日完成的 Todo 主程序集成。新增的 todo_write 已经进入 AgentHub 原有的工具表，与知识检索共用模型循环、Hooks 和运行观察器。命令行入口也能直接运行这套流程。 不过，给一件事打勾很容易，确认它真的做完要难一些。这一版的清单负责保存状态和发出提醒，完成标记仍由调用方提交，业务结果还得另外核对。 先说清楚：这次提交的是整张清单todo_write 接收一个 JSON 对象，其中的 todos 是完整清单。例如，查询条款刚开始时，可以提交： 123456&#123; &quot;todos&quot;: [ &#123;&quot;content&quot;: &quot;查询拆封耳机退货条款&quot;, &quot;status&quot;: &quot;in_progress&quot;&#125;, ...</div></div></div></a><a class="pagination-related" href="/posts/ab95d0211677480fa0f9a4650cff6718.html" title="AgentHub 开发手记（二）：补上解析测试，让运行过程看得见"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-09</div><div class="info-item-2">AgentHub 开发手记（二）：补上解析测试，让运行过程看得见</div></div><div class="info-2"><div class="info-item-1">上一篇记录了 AgentHub 跑通图片处理的过程。任务能够完成以后，新的问题也出现了：如果结果不对，我怎么知道是哪一步出了问题？ 模型回复、解析器、工具和外部服务连在同一条调用链里，只看最终答案，很难定位原因。因此接下来的改动集中在两个地方：让文本解析能应对已知的格式变化，再把每轮调用记录下来。 这篇记录的是 2026 年 9 月 22 日对解析器、运行轨迹和工程计划的完善。 文本协议需要处理实际出现的格式这一版 AgentHub 用 Action、Action Input 和 Final Answer 从模型回复里提取决策。最开始的实现主要针对格式规整的文本。 但标签可能出现不同写法。例如，以下都是用于说明解析行为的样例： 1Action：echo 1**Action**: echo 还有内容放到下一行的情况： 1234Action: echoAction Input:第一行第二行 如果解析器只认最规整的单行格式，这些变化就可能造成工具名没有提取出来，或输入内容丢失。 这次修复的做法很直接：先统一全角冒号，再按行拆分标签和值，清理标签周围的空白和星号；遇到 Action I...</div></div></div></a><a class="pagination-related" href="/posts/5c3b148f0d174ea296854b367762bc10.html" title="AgentHub 开发手记（一）：用 Go 跑通 ReAct 和第一个真实工具"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-09</div><div class="info-item-2">AgentHub 开发手记（一）：用 Go 跑通 ReAct 和第一个真实工具</div></div><div class="info-2"><div class="info-item-1">最近我在用 Go 写一个叫 AgentHub 的项目，想把 AI Agent 从概念变成自己能看懂、能运行的程序。 第一阶段的目标很具体：给程序一个自然语言任务，让模型选择工具，程序执行工具，再把结果交回模型，最后得到回答。最开始用 Echo 验证流程，接着把已有的图片处理服务接进来。 这篇记录的是 2026 年 9 月 10 日的开发过程：项目骨架、图片工具注册，以及随后对忽略规则的修正。 先把模型、工具和循环分开项目刚开始时，我把主要代码分成了三部分： 部分 负责什么 模型客户端 把消息发给 GLM，取回模型回复 工具 执行具体操作，比如回显文本、缩放图片 Agent 内核 维护消息历史，解析回复，选择工具并控制循环 这样分的直接好处是，图片处理的细节可以留在图片工具里。Agent 内核只需要知道工具叫什么、能做什么，以及怎么调用它。 工具接口很小： 12345type Tool interface &#123; Name() string Description() string Execute(ctx context.C...</div></div></div></a><a class="pagination-related" href="/posts/1d721c9d4eab478c80aa62e1de648d58.html" title="AgentHub 开发手记（三）：让回答有依据，补上检索、用量统计与参数校验"><div class="cover" style="background:var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-10-09</div><div class="info-item-2">AgentHub 开发手记（三）：让回答有依据，补上检索、用量统计与参数校验</div></div><div class="info-2"><div class="info-item-1">前两个阶段，AgentHub 已经能通过模型选择工具，并记录模型和工具的调用过程。接下来，我想让它处理一个更接近业务的问题：根据商店提供的资料回答售后咨询。 这件事把几个问题放到了一起：回答依据从哪里来，每轮请求到底带了多少内容，以及模型给出的工具参数应该怎样检查。 这篇记录的是截至 2026 年 10 月 9 日完成的知识检索、模型用量统计和独立图片参数校验。这里的演示商店政策都是练习用的虚构资料。 先做一条能跟清楚的检索链路我先把演示商店的退货、保修和运费政策写进 Markdown 文档，用二级标题划分片段，再增加 knowledge_search 工具。 工具接受空格分隔的关键词，比如： 1耳机 拆封 退货 当前执行过程是： 检查上下文是否已取消，拒绝空关键词输入。 读取知识文档，按二级标题拆分片段。 将关键词和片段转换为小写，做子串匹配。 一个片段只要命中任意关键词，就加入结果。 返回片段内容，并附上来源文件名。 因此，工具返回给模型的是资料片段，模型再根据这些片段生成回答。 返回格式会包含这样的来源标识： 12来源：after_sales.md## 七天退货 把来...</div></div></div></a></div></div><hr class="custom-hr"><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i> <span>评论</span></div></div><div class="comment-wrap"><div><div id="waline-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/touxiang.png" onerror='this.onerror=null,this.src="/img/friend_404.gif"' alt="avatar"></div><div class="author-info-name">Decwoveh</div><div class="author-info-description">志于好好学习</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">36</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/wuyh266"><i class="fab fa-github"></i><span>速速关注我</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">一定要好好学习的呀</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BB%BD%E6%8A%80%E8%83%BD%EF%BC%8C%E6%8A%8A%E4%B8%8D%E5%90%8C%E8%81%8C%E8%B4%A3%E6%94%BE%E8%BF%9B%E4%B8%8D%E5%90%8C%E6%96%87%E4%BB%B6"><span class="toc-number">1.</span> <span class="toc-text">一份技能，把不同职责放进不同文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%9F%E8%AE%A1%E4%B9%8B%E5%89%8D%EF%BC%8C%E5%85%88%E7%BA%A6%E5%AE%9A%E4%BB%80%E4%B9%88%E7%AE%97%E4%B8%80%E7%AC%94%E6%9C%89%E6%95%88%E8%AE%A2%E5%8D%95"><span class="toc-number">2.</span> <span class="toc-text">统计之前，先约定什么算一笔有效订单</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E6%9D%BF%E5%8F%82%E4%B8%8E%E7%94%9F%E6%88%90%EF%BC%8C%E8%BE%93%E5%87%BA%E6%96%87%E4%BB%B6%E4%B9%9F%E6%9C%89%E8%87%AA%E5%B7%B1%E7%9A%84%E8%BE%B9%E7%95%8C"><span class="toc-number">3.</span> <span class="toc-text">模板参与生成，输出文件也有自己的边界</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%A8%E9%A1%B9%E7%9B%AE%E6%A0%B9%E7%9B%AE%E5%BD%95%E5%AE%9E%E9%99%85%E8%BF%90%E8%A1%8C"><span class="toc-number">4.</span> <span class="toc-text">在项目根目录实际运行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%99%E4%B8%80%E7%89%88%E7%9A%84%E4%BC%98%E7%82%B9"><span class="toc-number">5.</span> <span class="toc-text">这一版的优点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%98%E6%B2%A1%E6%9C%89%E8%A1%A5%E9%BD%90%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="toc-number">6.</span> <span class="toc-text">还没有补齐的地方</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/a75d601ef9ce4d428e18d20970788b4f.html" title="AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件">AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件</a><time datetime="2026-10-30T00:00:00.000Z" title="发表于 2026-10-30 00:00:00">2026-10-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/b2a8a3dd480a4f31bfc00c25e0290646.html" title="AgentHub 实战手记（八）：让“记住了”走完保存、召回和模型输入">AgentHub 实战手记（八）：让“记住了”走完保存、召回和模型输入</a><time datetime="2026-10-30T00:00:00.000Z" title="发表于 2026-10-30 00:00:00">2026-10-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/e782139cb46b4d459ebeced5201e68d2.html" title="AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完">AgentHub 实战手记（六）：给任务列一张清单，但别把打勾当成做完</a><time datetime="2026-10-20T00:00:00.000Z" title="发表于 2026-10-20 00:00:00">2026-10-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/b47bca51ec9945a4b9301b580f28fc72.html" title="AgentHub 实战手记（五）：给工具调用加上 Hook，让“先等等”真的生效">AgentHub 实战手记（五）：给工具调用加上 Hook，让“先等等”真的生效</a><time datetime="2026-10-16T00:00:00.000Z" title="发表于 2026-10-16 00:00:00">2026-10-16</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/9398a24a3c074341ac9787c1e1336a7f.html" title="关于部分栈问题的求解">关于部分栈问题的求解</a><time datetime="2026-10-11T23:29:24.000Z" title="发表于 2026-10-11 23:29:24">2026-10-11</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Decwoveh</span><span class="framework-info"><span>框架</span> <a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题</span> <a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.4.3</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://fastly.jsdelivr.net/npm/vanilla-lazyload@latest/dist/lazyload.iife.min.js"></script><div class="js-pjax"><script>(() => {
+  let initFn = window.walineFn || null
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"placeholder":"说点什么吧...","requiredMeta":["nick"],"meta":["nick","mail","link"],"commentSorting":"latest","pageSize":10,"emoji":true,"imageUploader":false,"login":"disable","lang":"zh-CN"}
+
+  const destroyWaline = ele => ele.destroy()
+
+  const initWaline = (Fn, el = document, path = window.location.pathname) => {
+    const waline = Fn({
+      el: el.querySelector('#waline-wrap'),
+      serverURL: 'https://myblog-umber-chi.vercel.app',
+      pageview: false,
+      dark: 'html[data-theme="dark"]',
+      comment: true,
+      ...option,
+      path: isShuoshuo ? path : (option && option.path) || path
+    })
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyWaline = () => {
+        destroyWaline(waline)
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const loadWaline = (el, path) => {
+    if (initFn) initWaline(initFn, el, path)
+    else {
+      btf.getCSS('https://fastly.jsdelivr.net/npm/@waline/client@3.6.0/dist/waline.css')
+        .then(() => import('https://fastly.jsdelivr.net/npm/@waline/client@3.6.0/dist/waline.js'))
+        .then(({ init }) => {
+          initFn = init || Waline.init
+          initWaline(initFn, el, path)
+          window.walineFn = initFn
+        })
+    }
+  }
+
+  if (isShuoshuo) {
+    'Waline' === 'Waline'
+      ? window.shuoshuoComment = { loadComment: loadWaline } 
+      : window.loadOtherComment = loadWaline
+    return
+  }
+
+  if ('Waline' === 'Waline' || !false) {
+    if (false) btf.loadComment(document.getElementById('waline-wrap'),loadWaline)
+    else setTimeout(loadWaline, 0)
+  } else {
+    window.loadOtherComment = loadWaline
+  }
+})()</script></div><script src="/js/statistics-fix.js"></script><div class="aplayer no-destroy" data-id="13050639033" data-server="netease" data-type="playlist" data-order="list" data-fixed="true" data-preload="auto" data-autoplay="true" data-mutex="true"></div><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/aplayer@latest/dist/APlayer.min.css" media="print" onload='this.media="all"'><script src="https://fastly.jsdelivr.net/npm/aplayer@latest/dist/APlayer.min.js"></script><script src="https://fastly.jsdelivr.net/npm/butterfly-extsrc@latest/metingjs/dist/Meting.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i> <span>数据加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"></div></div><hr><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div><div class="app-refresh" id="app-refresh" style="position:fixed;top:-2.2rem;left:0;right:0;z-index:99999;padding:0 1rem;font-size:15px;height:2.2rem;transition:all .3s ease"><div class="app-refresh-wrap" style="display:flex;color:#fff;height:100%;align-items:center;justify-content:center"><label>✨ 有新文章啦！ 👉</label><a href="javascript:void(0)" onclick="location.reload()"><span style="color:#fff;text-decoration:underline;cursor:pointer">🍗点击食用🍔</span></a></div></div><script>if ('serviceWorker' in navigator) {
+if (navigator.serviceWorker.controller) {
+navigator.serviceWorker.addEventListener('controllerchange', function() {
+showNotification()
+})
+}
+window.addEventListener('load', function() {
+navigator.serviceWorker.register('/sw.js')
+})
+}
+function showNotification() {
+if (GLOBAL_CONFIG.Snackbar) {
+var snackbarBg =
+document.documentElement.getAttribute('data-theme') === 'light' ?
+GLOBAL_CONFIG.Snackbar.bgLight :
+GLOBAL_CONFIG.Snackbar.bgDark
+var snackbarPos = GLOBAL_CONFIG.Snackbar.position
+Snackbar.show({
+text: '✨ 有新文章啦！ 👉',
+backgroundColor: snackbarBg,
+duration: 500000,
+pos: snackbarPos,
+actionText: '🍗点击食用🍔',
+actionTextColor: '#fff',
+onActionClick: function(e) {
+location.reload()
+},
+})
+} else {
+var showBg =
+document.documentElement.getAttribute('data-theme') === 'light' ?
+'#3b70fc' :
+'#1f1f1f'
+var cssText = `top: 0; background: ${showBg};`
+document.getElementById('app-refresh').style.cssText = cssText
+}
+}</script></div><script async src="/js/ali_font.js"></script><div class="js-pjax"><script async>for(var arr=document.getElementsByClassName("recent-post-item"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__zoomIn"),arr[i].setAttribute("data-wow-duration","1.5s"),arr[i].setAttribute("data-wow-delay","200ms"),arr[i].setAttribute("data-wow-offset","30"),arr[i].setAttribute("data-wow-iteration","1")</script><script async>for(var arr=document.getElementsByClassName("card-widget"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__zoomIn"),arr[i].setAttribute("data-wow-duration",""),arr[i].setAttribute("data-wow-delay","200ms"),arr[i].setAttribute("data-wow-offset",""),arr[i].setAttribute("data-wow-iteration","")</script><script async>for(var arr=document.getElementsByClassName("flink-list-card"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__flipInY"),arr[i].setAttribute("data-wow-duration","3s"),arr[i].setAttribute("data-wow-delay",""),arr[i].setAttribute("data-wow-offset",""),arr[i].setAttribute("data-wow-iteration","")</script><script async>for(var arr=document.getElementsByClassName("flink-list-card"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__animated"),arr[i].setAttribute("data-wow-duration","3s"),arr[i].setAttribute("data-wow-delay",""),arr[i].setAttribute("data-wow-offset",""),arr[i].setAttribute("data-wow-iteration","")</script><script async>for(var arr=document.getElementsByClassName("article-sort-item"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__slideInRight"),arr[i].setAttribute("data-wow-duration","1.5s"),arr[i].setAttribute("data-wow-delay",""),arr[i].setAttribute("data-wow-offset",""),arr[i].setAttribute("data-wow-iteration","")</script><script async>for(var arr=document.getElementsByClassName("site-card"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__flipInY"),arr[i].setAttribute("data-wow-duration","3s"),arr[i].setAttribute("data-wow-delay",""),arr[i].setAttribute("data-wow-offset",""),arr[i].setAttribute("data-wow-iteration","")</script><script async>for(var arr=document.getElementsByClassName("site-card"),i=0;i<arr.length;i++)arr[i].classList.add("wow"),arr[i].classList.add("animate__animated"),arr[i].setAttribute("data-wow-duration","3s"),arr[i].setAttribute("data-wow-delay",""),arr[i].setAttribute("data-wow-offset",""),arr[i].setAttribute("data-wow-iteration","")</script></div><script defer src="https://cdn.cbd.int/hexo-butterfly-wowjs/lib/wow.min.js"></script><script defer src="https://cdn.cbd.int/hexo-butterfly-wowjs/lib/wow_init.js"></script></body></html>
