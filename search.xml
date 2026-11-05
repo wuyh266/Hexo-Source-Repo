@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>今天的小小记录</title>
+      <link href="/posts/39abb3ceb5784cfd98e5e155c3b4853c.html"/>
+      <url>/posts/39abb3ceb5784cfd98e5e155c3b4853c.html</url>
+      
+        <content type="html"><![CDATA[<h2 id="今天想记录的事"><a href="#今天想记录的事" class="headerlink" title="今天想记录的事"></a>今天想记录的事</h2><p>今天一天都聒噪的很，不知道是为什么，尤其是下午，老是会想起过去的事情，我不知道我是怎么了，我自认为已经足够有决断了，但是我还是没有办法让自己真正的在心里做一个决断。我只是感觉到了失望，也许比失望更为深重，现在想来，这么多年来我好像确实没有被爱过，从最开始，好像第二天就已经开始后悔跟我在一起了，之后的所有，我当初看来确实是被爱了，但是现在看来，是不是她只是一直在表演，像个演员一样表演，虽然很夸张，但是确实是那种能说出“你只是习惯了”的人能做出来的事情。<br>总有人说，过程重要一些，因为过程会改变一个人。但这些都是四五十岁的人讲的话，是他们站在他们那个年纪说的话啊，我才二十岁，我为什么要有这样的人生感悟，我就是要重视结果，我没有心思去注重他们所谓细水长流的人生，我没有那种站在另一个维度审视自己的能力，我害怕我的付出没有回报，我害怕真心被摒弃，我害怕看不到头的迷茫。很不幸，这几个突然就凑到一块了，也许没有凑到一起，我还能顶住，我也不想让别人觉得我承受能力不行，但是我就是郁闷。<br>我试图在别的地方寻找答案，但是我找不到答案，我自己也给不出答案，那就这样吧，我好累。</p><blockquote><p>愿我的长夏永不凋落</p></blockquote>]]></content>
+      
+      
+      <categories>
+          
+          <category> 生活随笔 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 学习记录 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>AgentHub 实战手记（七）：把 Skill 装成一套能运行的文件</title>
       <link href="/posts/a75d601ef9ce4d428e18d20970788b4f.html"/>
       <url>/posts/a75d601ef9ce4d428e18d20970788b4f.html</url>
@@ -221,37 +246,6 @@
     
     
     <entry>
-      <title>AgentHub 开发手记（二）：补上解析测试，让运行过程看得见</title>
-      <link href="/posts/ab95d0211677480fa0f9a4650cff6718.html"/>
-      <url>/posts/ab95d0211677480fa0f9a4650cff6718.html</url>
-      
-        <content type="html"><![CDATA[<p>上一篇记录了 AgentHub 跑通图片处理的过程。任务能够完成以后，新的问题也出现了：如果结果不对，我怎么知道是哪一步出了问题？</p><p>模型回复、解析器、工具和外部服务连在同一条调用链里，只看最终答案，很难定位原因。因此接下来的改动集中在两个地方：让文本解析能应对已知的格式变化，再把每轮调用记录下来。</p><p>这篇记录的是 2026 年 9 月 22 日对解析器、运行轨迹和工程计划的完善。</p><span id="more"></span><h2 id="文本协议需要处理实际出现的格式"><a href="#文本协议需要处理实际出现的格式" class="headerlink" title="文本协议需要处理实际出现的格式"></a>文本协议需要处理实际出现的格式</h2><p>这一版 AgentHub 用 <code>Action</code>、<code>Action Input</code> 和 <code>Final Answer</code> 从模型回复里提取决策。最开始的实现主要针对格式规整的文本。</p><p>但标签可能出现不同写法。例如，以下都是用于说明解析行为的样例：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Action：echo</span><br></pre></td></tr></table></figure><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">**Action**: echo</span><br></pre></td></tr></table></figure><p>还有内容放到下一行的情况：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Action: echo</span><br><span class="line">Action Input:</span><br><span class="line">第一行</span><br><span class="line">第二行</span><br></pre></td></tr></table></figure><p>如果解析器只认最规整的单行格式，这些变化就可能造成工具名没有提取出来，或输入内容丢失。</p><p>这次修复的做法很直接：先统一全角冒号，再按行拆分标签和值，清理标签周围的空白和星号；遇到 <code>Action Input</code> 或 <code>Final Answer</code> 时，把当前值和后续行合并起来。</p><p>这里的重点是把已经发现的问题落成明确规则，而不是期待提示词让所有输出永远保持一致。</p><h2 id="八个测试把解析行为固定下来"><a href="#八个测试把解析行为固定下来" class="headerlink" title="八个测试把解析行为固定下来"></a>八个测试把解析行为固定下来</h2><p><code>Parse</code> 接收字符串并返回 <code>Decision</code>，没有网络、文件和模型调用。这让它适合用固定输入检查行为。</p><p>这次为解析器补了八个测试，覆盖的情况包括：</p><div class="table-container"><table><thead><tr><th>情况</th><th>检查的行为</th></tr></thead><tbody><tr><td>全角冒号</td><td>能提取 <code>echo</code> 工具名</td></tr><tr><td>Markdown 加粗标签</td><td>能识别 <code>Action</code></td></tr><tr><td>输入从下一行开始</td><td>能提取后续内容</td></tr><tr><td>多行最终答案</td><td>保留换行和完整文本</td></tr><tr><td>多行工具输入</td><td>保留多行输入</td></tr><tr><td>输入后又出现工具标签</td><td>已提取的工具名不被覆盖</td></tr><tr><td>完整工具请求</td><td>工具名和输入都正确</td></tr><tr><td>完整最终回答</td><td>正确判断运行可以结束</td></tr></tbody></table></div><p>测试的意义在于把“这个样例应该怎样解析”保存下来。以后修改解析器时，可以检查这些已知行为是否发生变化。</p><p>但也要认真看断言覆盖到哪里。例如，“输入后又出现工具标签”的测试，只检查先前提取的工具名仍为 <code>echo</code>。当前实现会把 <code>Action Input</code> 后面的全部文本收进输入，它没有证明后面的标签一定被排除。</p><p>同样，这八个测试也不意味着任意非法回复都能处理。字段冲突、缺失字段和复杂的分隔规则，仍然需要另外定义行为。</p><h2 id="解析测试和运行过程记录解决不同的问题"><a href="#解析测试和运行过程记录解决不同的问题" class="headerlink" title="解析测试和运行过程记录解决不同的问题"></a>解析测试和运行过程记录解决不同的问题</h2><p>解析测试能回答：给定一段文本，程序会提取出什么。</p><p>实际运行时，我还想知道：模型这一轮返回了什么，工具有没有被调用，传进去的参数是什么，以及等待时间花在哪里。</p><p>因此，我增加了 <code>Observer</code>。在这一版里，它有两个观察入口：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Observer <span class="keyword">interface</span> &#123;</span><br><span class="line">    OnLLMCall(step <span class="type">int</span>, reply <span class="type">string</span>, err <span class="type">error</span>, elapsed time.Duration)</span><br><span class="line">    OnToolCall(step <span class="type">int</span>, name <span class="type">string</span>, input <span class="type">string</span>,</span><br><span class="line">        output <span class="type">string</span>, err <span class="type">error</span>, elapsed time.Duration)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>Agent 内核在模型调用和工具调用结束后，把结果交给 Observer。具体怎么输出，放在 <code>ConsoleObserver</code> 里实现。</p><p>这样做之后，循环仍然负责执行和消息回传，控制台输出负责展示发生了什么。以后如果需要换一种记录方式，至少有一个可以替换的接口。</p><h2 id="看见时间，也看见输入和结果"><a href="#看见时间，也看见输入和结果" class="headerlink" title="看见时间，也看见输入和结果"></a>看见时间，也看见输入和结果</h2><p>控制台轨迹主要记录这些信息：</p><ul><li>当前轮次。</li><li>模型调用耗时、回复或错误。</li><li>工具名称、输入、执行耗时、结果或错误。</li></ul><p>模型计时围绕一次 <code>Chat</code> 调用，工具计时围绕一次 <code>Execute</code> 调用。因此它们表示的是对应调用经历的时间，包含请求和处理过程，不能直接当成模型内部计算时间。</p><p>有了这些记录，排查问题时就能沿着调用链检查：模型是否输出了预期工具名，解析后传入的参数是否合理，工具是否返回错误，以及下一轮是否收到了反馈。</p><p>未知工具的情况也会记录到 Observer，并生成错误 Observation 交回模型。这样，工具名称错误本身也成为可查看的事件。</p><h2 id="空-Observer-让观察能力保持可选"><a href="#空-Observer-让观察能力保持可选" class="headerlink" title="空 Observer 让观察能力保持可选"></a>空 Observer 让观察能力保持可选</h2><p>构造 Agent 时，如果没有传入 Observer，代码会使用 <code>NopObserver</code>。</p><p>它实现同一个接口，方法体为空。这样内核仍然可以在固定位置调用观察方法，不需要每次都检查 Observer 是否为空。</p><p>这个设计在当前规模下很实用：命令行运行时可以打开控制台轨迹，其他调用场景也可以选择不输出。</p><p>不过，这里的 Observer 是事后观察。工具已经执行完，才把结果交给它。它没有负责批准或拒绝工具调用，因此不能把它当成执行前的权限检查。</p><h2 id="工程计划要和实现状态分别记录"><a href="#工程计划要和实现状态分别记录" class="headerlink" title="工程计划要和实现状态分别记录"></a>工程计划要和实现状态分别记录</h2><p>同一天，我还整理了 AgentHub 的工程化计划，列出了后续的功能方向和验收任务。</p><p>计划的作用是把接下来需要解决的问题写清楚。至于哪些已经完成，仍然要回到对应代码和实际运行情况来看。</p><p>截至这一阶段，解析器有了八个固定输入测试，运行过程有了 Observer 和控制台轨迹。但是 Agent 循环的完整失败路径还没有相应的自动化测试，记录日志也不能替代这些测试。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> 项目学习 </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> AgentHub </tag>
-            
-            <tag> Go </tag>
-            
-            <tag> 测试 </tag>
-            
-            <tag> 可观测性 </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>AgentHub 开发手记（一）：用 Go 跑通 ReAct 和第一个真实工具</title>
       <link href="/posts/5c3b148f0d174ea296854b367762bc10.html"/>
       <url>/posts/5c3b148f0d174ea296854b367762bc10.html</url>
@@ -275,6 +269,37 @@
             <tag> AI Agent </tag>
             
             <tag> ReAct </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>AgentHub 开发手记（二）：补上解析测试，让运行过程看得见</title>
+      <link href="/posts/ab95d0211677480fa0f9a4650cff6718.html"/>
+      <url>/posts/ab95d0211677480fa0f9a4650cff6718.html</url>
+      
+        <content type="html"><![CDATA[<p>上一篇记录了 AgentHub 跑通图片处理的过程。任务能够完成以后，新的问题也出现了：如果结果不对，我怎么知道是哪一步出了问题？</p><p>模型回复、解析器、工具和外部服务连在同一条调用链里，只看最终答案，很难定位原因。因此接下来的改动集中在两个地方：让文本解析能应对已知的格式变化，再把每轮调用记录下来。</p><p>这篇记录的是 2026 年 9 月 22 日对解析器、运行轨迹和工程计划的完善。</p><span id="more"></span><h2 id="文本协议需要处理实际出现的格式"><a href="#文本协议需要处理实际出现的格式" class="headerlink" title="文本协议需要处理实际出现的格式"></a>文本协议需要处理实际出现的格式</h2><p>这一版 AgentHub 用 <code>Action</code>、<code>Action Input</code> 和 <code>Final Answer</code> 从模型回复里提取决策。最开始的实现主要针对格式规整的文本。</p><p>但标签可能出现不同写法。例如，以下都是用于说明解析行为的样例：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Action：echo</span><br></pre></td></tr></table></figure><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">**Action**: echo</span><br></pre></td></tr></table></figure><p>还有内容放到下一行的情况：</p><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Action: echo</span><br><span class="line">Action Input:</span><br><span class="line">第一行</span><br><span class="line">第二行</span><br></pre></td></tr></table></figure><p>如果解析器只认最规整的单行格式，这些变化就可能造成工具名没有提取出来，或输入内容丢失。</p><p>这次修复的做法很直接：先统一全角冒号，再按行拆分标签和值，清理标签周围的空白和星号；遇到 <code>Action Input</code> 或 <code>Final Answer</code> 时，把当前值和后续行合并起来。</p><p>这里的重点是把已经发现的问题落成明确规则，而不是期待提示词让所有输出永远保持一致。</p><h2 id="八个测试把解析行为固定下来"><a href="#八个测试把解析行为固定下来" class="headerlink" title="八个测试把解析行为固定下来"></a>八个测试把解析行为固定下来</h2><p><code>Parse</code> 接收字符串并返回 <code>Decision</code>，没有网络、文件和模型调用。这让它适合用固定输入检查行为。</p><p>这次为解析器补了八个测试，覆盖的情况包括：</p><div class="table-container"><table><thead><tr><th>情况</th><th>检查的行为</th></tr></thead><tbody><tr><td>全角冒号</td><td>能提取 <code>echo</code> 工具名</td></tr><tr><td>Markdown 加粗标签</td><td>能识别 <code>Action</code></td></tr><tr><td>输入从下一行开始</td><td>能提取后续内容</td></tr><tr><td>多行最终答案</td><td>保留换行和完整文本</td></tr><tr><td>多行工具输入</td><td>保留多行输入</td></tr><tr><td>输入后又出现工具标签</td><td>已提取的工具名不被覆盖</td></tr><tr><td>完整工具请求</td><td>工具名和输入都正确</td></tr><tr><td>完整最终回答</td><td>正确判断运行可以结束</td></tr></tbody></table></div><p>测试的意义在于把“这个样例应该怎样解析”保存下来。以后修改解析器时，可以检查这些已知行为是否发生变化。</p><p>但也要认真看断言覆盖到哪里。例如，“输入后又出现工具标签”的测试，只检查先前提取的工具名仍为 <code>echo</code>。当前实现会把 <code>Action Input</code> 后面的全部文本收进输入，它没有证明后面的标签一定被排除。</p><p>同样，这八个测试也不意味着任意非法回复都能处理。字段冲突、缺失字段和复杂的分隔规则，仍然需要另外定义行为。</p><h2 id="解析测试和运行过程记录解决不同的问题"><a href="#解析测试和运行过程记录解决不同的问题" class="headerlink" title="解析测试和运行过程记录解决不同的问题"></a>解析测试和运行过程记录解决不同的问题</h2><p>解析测试能回答：给定一段文本，程序会提取出什么。</p><p>实际运行时，我还想知道：模型这一轮返回了什么，工具有没有被调用，传进去的参数是什么，以及等待时间花在哪里。</p><p>因此，我增加了 <code>Observer</code>。在这一版里，它有两个观察入口：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Observer <span class="keyword">interface</span> &#123;</span><br><span class="line">    OnLLMCall(step <span class="type">int</span>, reply <span class="type">string</span>, err <span class="type">error</span>, elapsed time.Duration)</span><br><span class="line">    OnToolCall(step <span class="type">int</span>, name <span class="type">string</span>, input <span class="type">string</span>,</span><br><span class="line">        output <span class="type">string</span>, err <span class="type">error</span>, elapsed time.Duration)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>Agent 内核在模型调用和工具调用结束后，把结果交给 Observer。具体怎么输出，放在 <code>ConsoleObserver</code> 里实现。</p><p>这样做之后，循环仍然负责执行和消息回传，控制台输出负责展示发生了什么。以后如果需要换一种记录方式，至少有一个可以替换的接口。</p><h2 id="看见时间，也看见输入和结果"><a href="#看见时间，也看见输入和结果" class="headerlink" title="看见时间，也看见输入和结果"></a>看见时间，也看见输入和结果</h2><p>控制台轨迹主要记录这些信息：</p><ul><li>当前轮次。</li><li>模型调用耗时、回复或错误。</li><li>工具名称、输入、执行耗时、结果或错误。</li></ul><p>模型计时围绕一次 <code>Chat</code> 调用，工具计时围绕一次 <code>Execute</code> 调用。因此它们表示的是对应调用经历的时间，包含请求和处理过程，不能直接当成模型内部计算时间。</p><p>有了这些记录，排查问题时就能沿着调用链检查：模型是否输出了预期工具名，解析后传入的参数是否合理，工具是否返回错误，以及下一轮是否收到了反馈。</p><p>未知工具的情况也会记录到 Observer，并生成错误 Observation 交回模型。这样，工具名称错误本身也成为可查看的事件。</p><h2 id="空-Observer-让观察能力保持可选"><a href="#空-Observer-让观察能力保持可选" class="headerlink" title="空 Observer 让观察能力保持可选"></a>空 Observer 让观察能力保持可选</h2><p>构造 Agent 时，如果没有传入 Observer，代码会使用 <code>NopObserver</code>。</p><p>它实现同一个接口，方法体为空。这样内核仍然可以在固定位置调用观察方法，不需要每次都检查 Observer 是否为空。</p><p>这个设计在当前规模下很实用：命令行运行时可以打开控制台轨迹，其他调用场景也可以选择不输出。</p><p>不过，这里的 Observer 是事后观察。工具已经执行完，才把结果交给它。它没有负责批准或拒绝工具调用，因此不能把它当成执行前的权限检查。</p><h2 id="工程计划要和实现状态分别记录"><a href="#工程计划要和实现状态分别记录" class="headerlink" title="工程计划要和实现状态分别记录"></a>工程计划要和实现状态分别记录</h2><p>同一天，我还整理了 AgentHub 的工程化计划，列出了后续的功能方向和验收任务。</p><p>计划的作用是把接下来需要解决的问题写清楚。至于哪些已经完成，仍然要回到对应代码和实际运行情况来看。</p><p>截至这一阶段，解析器有了八个固定输入测试，运行过程有了 Observer 和控制台轨迹。但是 Agent 循环的完整失败路径还没有相应的自动化测试，记录日志也不能替代这些测试。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 项目学习 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> AgentHub </tag>
+            
+            <tag> Go </tag>
+            
+            <tag> 测试 </tag>
+            
+            <tag> 可观测性 </tag>
             
         </tags>
       
@@ -794,22 +819,22 @@
     
     
     <entry>
-      <title></title>
-      <link href="/js/statistics-fix.js"/>
-      <url>/js/statistics-fix.js</url>
+      <title>标签</title>
+      <link href="/tags/index.html"/>
+      <url>/tags/index.html</url>
       
-        <content type="html"><![CDATA[// 统计数据显示优化document.addEventListener('DOMContentLoaded', function() {  // 处理不蒜子统计加载超时  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 5000); // 5秒后如果还没加载完成就显示0  // 处理评论数显示  setTimeout(function() {    const commentCountElements = document.querySelectorAll('.card-post-count');    commentCountElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('loading')) {        element.innerHTML = '0';      }    });  }, 3000); // 3秒后如果还没加载完成就显示0});// 监听页面变化（用于pjax）document.addEventListener('pjax:complete', function() {  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 3000);});]]></content>
+        <content type="html"><![CDATA[]]></content>
       
     </entry>
     
     
     
     <entry>
-      <title>标签</title>
-      <link href="/tags/index.html"/>
-      <url>/tags/index.html</url>
+      <title></title>
+      <link href="/js/statistics-fix.js"/>
+      <url>/js/statistics-fix.js</url>
       
-        <content type="html"><![CDATA[]]></content>
+        <content type="html"><![CDATA[// 统计数据显示优化document.addEventListener('DOMContentLoaded', function() {  // 处理不蒜子统计加载超时  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 5000); // 5秒后如果还没加载完成就显示0  // 处理评论数显示  setTimeout(function() {    const commentCountElements = document.querySelectorAll('.card-post-count');    commentCountElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('loading')) {        element.innerHTML = '0';      }    });  }, 3000); // 3秒后如果还没加载完成就显示0});// 监听页面变化（用于pjax）document.addEventListener('pjax:complete', function() {  setTimeout(function() {    const busuanziElements = document.querySelectorAll('#busuanzi_container_site_pv, #busuanzi_container_site_uv, #busuanzi_container_page_pv');    busuanziElements.forEach(function(element) {      if (element.innerHTML === '' || element.innerHTML.includes('busuanzi')) {        element.innerHTML = '0';      }    });  }, 3000);});]]></content>
       
     </entry>
     
